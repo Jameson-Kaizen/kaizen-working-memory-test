@@ -1,0 +1,494 @@
+<!--
+  Kaizen Working Memory Test - KID version (about 6 to 12). Parent-facilitated, child-performed.
+  Flow: PARENT intro + child's-age input -> child does 3 simplified rounds -> PARENT-facing profile.
+  Rounds: Numbers (forward), Light-up squares (spatial), Matching (1-back). No backward span.
+  Easier starts, slower pace, bigger visuals, age-scaled norms. Parent gets the results + booking.
+  COMPLIANCE: informal screening estimate for the parent, NOT a clinical/diagnostic assessment.
+-->
+<div id="wmq-root" class="wmq-root">
+  <noscript><div class="wmq-card"><p class="wmq-lead">This needs JavaScript enabled. Please enable it and reload.</p></div></noscript>
+
+  <!-- PARENT INTRO + AGE -->
+  <section id="wmq-parent" class="wmq-card" hidden>
+    <div class="wmq-badge" id="wmq-heartbeat">● for the grown-up</div>
+    <h2 class="wmq-h2">Your Child's Memory Check</h2>
+    <p class="wmq-lead">This is a quick, playful check of your child's working memory, the mental scratchpad they use to hold and use information for a few seconds. It is behind following directions, mental math, and keeping their place in a task.</p>
+    <div class="wmq-tip" style="text-align:left">
+      <strong>How it works:</strong>
+      <ul class="wmq-tiplist">
+        <li>Your child does three short games (about 5 minutes).</li>
+        <li>Sit with them, help them get started, then let them play.</li>
+        <li>Their results come back to you at the end.</li>
+      </ul>
+    </div>
+    <p class="wmq-sub">How old is your child?</p>
+    <div class="wmq-ages" id="wmq-ages"></div>
+    <button class="wmq-btn wmq-btn-primary" id="wmq-parent-go" disabled>We're ready to start</button>
+    <p class="wmq-fine">An informal estimate for your own insight, not a clinical or diagnostic assessment.</p>
+  </section>
+
+  <!-- PROGRESS BAR -->
+  <div id="wmq-progress" class="wmq-pbar" hidden>
+    <div class="wmq-pbar-label" id="wmq-pbar-label"></div>
+    <div class="wmq-pbar-seg" id="wmq-pbar-seg"></div>
+  </div>
+
+  <!-- ROUND INTRO -->
+  <section id="wmq-blockintro" class="wmq-card" hidden>
+    <div class="wmq-roundtag" id="wmq-round-tag"></div>
+    <h2 class="wmq-h2" id="wmq-block-title"></h2>
+    <p class="wmq-lead" id="wmq-block-desc"></p>
+    <div class="wmq-howto" id="wmq-block-how"></div>
+    <button class="wmq-btn wmq-btn-primary" id="wmq-block-go">Let's practice</button>
+  </section>
+
+  <!-- READY -->
+  <section id="wmq-ready" class="wmq-card" hidden>
+    <div class="wmq-fb-icon" style="color:var(--wmq-green)">⭐</div>
+    <h2 class="wmq-h2">Nice practice!</h2>
+    <p class="wmq-lead" id="wmq-ready-text">Now let's play for real. Ready?</p>
+    <button class="wmq-btn wmq-btn-primary" id="wmq-ready-go">Yes, let's go!</button>
+  </section>
+
+  <!-- PRESENTATION -->
+  <section id="wmq-present" class="wmq-card wmq-present" hidden>
+    <div class="wmq-progress2"><span id="wmq-present-label"></span></div>
+    <div class="wmq-stage" aria-live="polite">
+      <div class="wmq-digit" id="wmq-digit"></div>
+      <div class="wmq-grid wmq-grid-show" id="wmq-grid-show" hidden></div>
+    </div>
+    <p class="wmq-watch" id="wmq-watch">Watch closely…</p>
+  </section>
+
+  <!-- RECALL: DIGIT -->
+  <section id="wmq-recall" class="wmq-card" hidden>
+    <div class="wmq-progress2"><span id="wmq-recall-label"></span></div>
+    <p class="wmq-recall-instr" id="wmq-recall-instr"></p>
+    <div class="wmq-entry" id="wmq-entry" aria-live="polite"></div>
+    <div class="wmq-keypad" id="wmq-keypad"></div>
+    <div class="wmq-actions">
+      <button class="wmq-btn wmq-btn-ghost" id="wmq-clear">Clear</button>
+      <button class="wmq-btn wmq-btn-primary" id="wmq-submit" disabled>Done</button>
+    </div>
+  </section>
+
+  <!-- RECALL: SPATIAL -->
+  <section id="wmq-recall-grid" class="wmq-card" hidden>
+    <div class="wmq-progress2"><span id="wmq-recallg-label"></span></div>
+    <p class="wmq-recall-instr">Tap the squares in the SAME order they lit up.</p>
+    <div class="wmq-grid wmq-grid-resp" id="wmq-grid-resp"></div>
+    <div class="wmq-actions">
+      <button class="wmq-btn wmq-btn-ghost" id="wmq-gclear">Clear</button>
+      <button class="wmq-btn wmq-btn-primary" id="wmq-gsubmit" disabled>Done</button>
+    </div>
+  </section>
+
+  <!-- N-BACK (1-back) -->
+  <section id="wmq-nback" class="wmq-card" hidden>
+    <div class="wmq-progress2"><span id="wmq-nback-label"></span></div>
+    <p class="wmq-recall-instr" id="wmq-nback-instr">Tap SAME when a picture matches the one right before it.</p>
+    <div class="wmq-stage wmq-stage-nb"><div class="wmq-digit wmq-iconmode" id="wmq-nback-item"></div></div>
+    <button class="wmq-btn wmq-btn-primary wmq-nback-btn" id="wmq-nback-match">SAME</button>
+    <div class="wmq-nback-feed" id="wmq-nback-feed">&nbsp;</div>
+  </section>
+
+  <!-- FEEDBACK -->
+  <section id="wmq-feedback" class="wmq-card wmq-feedback" hidden>
+    <div class="wmq-fb-icon" id="wmq-fb-icon"></div>
+    <p class="wmq-fb-text" id="wmq-fb-text"></p>
+    <p class="wmq-fb-sub" id="wmq-fb-sub"></p>
+  </section>
+
+  <!-- RESULTS (parent-facing) -->
+  <section id="wmq-results" class="wmq-card" hidden>
+    <div class="wmq-fb-icon" style="color:var(--wmq-green);font-size:40px">🎉</div>
+    <h2 class="wmq-h2">All done! Great job.</h2>
+    <p class="wmq-sub" id="wmq-results-note">Here is your child's working memory profile, compared to others their age.</p>
+    <div class="wmq-overall">
+      <div class="wmq-overall-num" id="wmq-overall-num">–</div>
+      <div class="wmq-overall-lbl">Overall<span id="wmq-overall-band"></span></div>
+    </div>
+    <div class="wmq-bars" id="wmq-bars"></div>
+    <p class="wmq-interp" id="wmq-profile"></p>
+    <div class="wmq-cta" id="wmq-cta"></div>
+    <button class="wmq-btn wmq-btn-ghost" id="wmq-retake">Take it again</button>
+    <p class="wmq-fine">Screening estimate only. A child's score varies a lot with age, mood, sleep, and focus. One session is a snapshot, not a diagnosis.</p>
+  </section>
+</div>
+
+<style>
+  html,body{margin:0;background:transparent;}
+  .wmq-root{--wmq-green:#2f8f5b;--wmq-green-d:#246c45;--wmq-ink:#243027;--wmq-muted:#6b7a70;
+    --wmq-bg:#ffffff;--wmq-soft:#f1f6f2;--wmq-line:#dde7e0;--wmq-warn:#c0563b;--wmq-radius:16px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--wmq-ink);max-width:560px;margin:0 auto;padding:8px;box-sizing:border-box;line-height:1.5;}
+  .wmq-root *{box-sizing:border-box;}
+  .wmq-root [hidden]{display:none!important;}
+  .wmq-card{background:var(--wmq-bg);border:1px solid var(--wmq-line);border-radius:var(--wmq-radius);
+    padding:26px 24px;text-align:center;box-shadow:0 2px 14px rgba(36,108,69,.06);}
+  .wmq-badge{display:inline-block;font-size:12px;font-weight:600;color:var(--wmq-green-d);
+    background:var(--wmq-soft);border-radius:999px;padding:3px 10px;margin-bottom:12px;letter-spacing:.02em;}
+  .wmq-h2{font-size:24px;margin:0 0 10px;font-weight:700;color:var(--wmq-ink);}
+  .wmq-lead{font-size:16px;color:var(--wmq-ink);margin:0 0 14px;}
+  .wmq-sub{font-size:15px;color:var(--wmq-ink);margin:0 0 12px;font-weight:600;}
+  .wmq-tip{font-size:14px;color:var(--wmq-ink);background:var(--wmq-soft);border-radius:12px;padding:12px 16px;margin:0 0 18px;}
+  .wmq-tiplist{margin:8px 0 0;padding-left:18px;color:var(--wmq-muted);}
+  .wmq-tiplist li{margin-bottom:4px;}
+  .wmq-ages{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:0 0 18px;}
+  .wmq-age{width:52px;height:52px;border-radius:12px;border:2px solid var(--wmq-line);background:var(--wmq-soft);
+    font-size:20px;font-weight:700;color:var(--wmq-ink);cursor:pointer;font-family:inherit;}
+  .wmq-age:hover{background:#e2efe7;}
+  .wmq-age.sel{background:var(--wmq-green);color:#fff;border-color:var(--wmq-green-d);}
+  .wmq-watch{color:var(--wmq-muted);font-size:14px;margin:18px 0 0;}
+  .wmq-fine{font-size:12px;color:var(--wmq-muted);margin:16px 0 0;font-style:italic;}
+  .wmq-btn{border:none;border-radius:12px;font-size:17px;font-weight:600;padding:14px 28px;cursor:pointer;
+    transition:transform .05s ease,background .15s ease,opacity .15s;font-family:inherit;}
+  .wmq-btn:active{transform:translateY(1px);}
+  .wmq-btn-primary{background:var(--wmq-green);color:#fff;}
+  .wmq-btn-primary:hover{background:var(--wmq-green-d);}
+  .wmq-btn-primary:disabled{background:#b6c9bd;cursor:not-allowed;}
+  .wmq-btn-ghost{background:transparent;color:var(--wmq-green-d);border:1px solid var(--wmq-line);}
+  .wmq-btn-ghost:hover{background:var(--wmq-soft);}
+  .wmq-pbar{max-width:560px;margin:0 auto 10px;padding:0 4px;}
+  .wmq-pbar-label{font-size:12px;font-weight:700;color:var(--wmq-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;text-align:center;}
+  .wmq-pbar-seg{display:flex;gap:6px;}
+  .wmq-pbar-seg span{flex:1;height:7px;border-radius:999px;background:var(--wmq-line);}
+  .wmq-pbar-seg span.done{background:var(--wmq-green);}
+  .wmq-pbar-seg span.active{background:var(--wmq-green);opacity:.5;}
+  .wmq-progress2{font-size:13px;font-weight:600;color:var(--wmq-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}
+  .wmq-roundtag{font-size:12px;font-weight:700;color:var(--wmq-green-d);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}
+  .wmq-howto{font-size:16px;color:var(--wmq-ink);background:var(--wmq-soft);border-radius:12px;padding:12px 16px;margin:0 0 18px;text-align:left;}
+  .wmq-howto ol{margin:0;padding-left:20px;}
+  .wmq-howto li{margin-bottom:6px;}
+  .wmq-present{min-height:330px;display:flex;flex-direction:column;justify-content:center;}
+  .wmq-stage{display:flex;align-items:center;justify-content:center;min-height:190px;}
+  .wmq-stage-nb{min-height:160px;}
+  .wmq-digit{font-size:104px;font-weight:700;color:var(--wmq-green-d);line-height:1;transition:opacity .08s ease;font-variant-numeric:tabular-nums;}
+  .wmq-digit.wmq-iconmode{font-size:92px;}
+  .wmq-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:280px;margin:0 auto;width:100%;}
+  .wmq-cell{aspect-ratio:1/1;border-radius:14px;background:var(--wmq-soft);border:2px solid var(--wmq-line);
+    display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:#fff;transition:background .1s,transform .08s;}
+  .wmq-grid-resp .wmq-cell{cursor:pointer;}
+  .wmq-grid-resp .wmq-cell:hover{background:#e2efe7;}
+  .wmq-cell.lit{background:var(--wmq-green);border-color:var(--wmq-green-d);transform:scale(1.06);}
+  .wmq-cell.picked{background:var(--wmq-green-d);border-color:var(--wmq-green-d);}
+  .wmq-recall-instr{font-size:18px;font-weight:600;margin:6px 0 14px;}
+  .wmq-entry{min-height:60px;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
+  .wmq-slot{width:52px;height:60px;border:2px solid var(--wmq-line);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700;color:var(--wmq-ink);background:#fafdfb;}
+  .wmq-slot.wmq-filled{border-color:var(--wmq-green);background:var(--wmq-soft);}
+  .wmq-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:300px;margin:0 auto 18px;}
+  .wmq-key{background:var(--wmq-soft);border:1px solid var(--wmq-line);border-radius:14px;font-size:30px;font-weight:700;color:var(--wmq-ink);padding:18px 0;cursor:pointer;font-family:inherit;transition:background .1s;}
+  .wmq-key:hover{background:#e2efe7;}
+  .wmq-key:active{background:#d2e7da;}
+  .wmq-key-zero{grid-column:2;}
+  .wmq-actions{display:flex;gap:12px;justify-content:center;margin-top:18px;}
+  .wmq-nback-btn{width:80%;max-width:320px;margin:8px auto 0;display:block;font-size:20px;padding:16px;}
+  .wmq-nback-feed{min-height:24px;font-size:16px;font-weight:600;margin-top:10px;}
+  .wmq-feedback{min-height:210px;display:flex;flex-direction:column;justify-content:center;}
+  .wmq-fb-icon{font-size:54px;margin-bottom:8px;}
+  .wmq-fb-text{font-size:20px;font-weight:600;margin:0;}
+  .wmq-fb-sub{font-size:14px;color:var(--wmq-muted);margin:6px 0 0;}
+  .wmq-overall{display:flex;flex-direction:column;align-items:center;justify-content:center;
+    width:150px;height:150px;border-radius:50%;background:var(--wmq-green);color:#fff;margin:14px auto 18px;}
+  .wmq-overall-num{font-size:52px;font-weight:700;line-height:1;}
+  .wmq-overall-lbl{font-size:12px;margin-top:4px;opacity:.9;text-align:center;}
+  .wmq-overall-lbl span{display:block;font-size:13px;font-weight:700;opacity:1;margin-top:2px;}
+  .wmq-bars{text-align:left;max-width:460px;margin:0 auto 18px;}
+  .wmq-barrow{margin-bottom:12px;}
+  .wmq-barhead{display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px;}
+  .wmq-barhead .nm{font-weight:600;color:var(--wmq-ink);}
+  .wmq-barhead .lv{font-weight:600;color:var(--wmq-green-d);}
+  .wmq-bartrack{height:10px;border-radius:999px;background:var(--wmq-soft);overflow:hidden;}
+  .wmq-barfill{height:100%;border-radius:999px;background:var(--wmq-green);transition:width .6s ease;}
+  .wmq-barsub{font-size:12px;color:var(--wmq-muted);margin-top:3px;}
+  .wmq-interp{font-size:15px;color:var(--wmq-ink);margin:0 auto 14px;max-width:460px;text-align:left;}
+  .wmq-cta{margin:0 0 16px;}
+  .wmq-next{font-size:15px;color:var(--wmq-ink);background:var(--wmq-soft);border-radius:12px;padding:12px 16px;margin:0 auto;max-width:440px;}
+  @media (max-width:480px){
+    .wmq-card{padding:22px 15px;}
+    .wmq-digit{font-size:88px;}
+    .wmq-digit.wmq-iconmode{font-size:78px;}
+    .wmq-h2{font-size:21px;}
+  }
+</style>
+
+<script>
+(function(){
+  "use strict";
+  var $=function(id){return document.getElementById(id);};
+  var now=function(){return (window.performance&&performance.now)?performance.now():Date.now();};
+  var clamp=function(v,lo,hi){return Math.max(lo,Math.min(hi,v));};
+  var NB_ICONS=["🍎","🚗","⭐","🐶","🌙","🔑"];
+
+  // Kid rounds: numbers forward, light-up squares (spatial), matching (1-back). No backward.
+  var ROUNDS=[
+    {key:"fwd", type:"digit",   dir:"fwd", name:"Numbers",        domain:"Number memory",
+     startLen:2, maxLen:6, typBase:24},
+    {key:"spa", type:"spatial", dir:"fwd", name:"Light-up squares", domain:"Picture-place memory",
+     startLen:2, maxLen:5, typBase:15},
+    {key:"upd", type:"nback",   n:1,       name:"Matching",       domain:"Keeping up",
+     streamLen:12, targets:4, itemMs:3000, isiMs:450}
+  ];
+  var GRID=9; // 3x3 (simpler for kids)
+  var CFG={ showMs:1100, blankMs:350, preCountMs:800, feedbackMs:1100 };
+
+  var selectedAge=0;
+  var S={};
+  function resetAll(){ S={ ri:0, practice:false, len:0, trialInLen:0, perfectInLen:0,
+        seq:[], entry:[], recallStart:0, results:{}, rt:[], childAge:selectedAge }; }
+  function ageFactor(){ var a=S.childAge||9; return clamp((a-4)/8, 0.45, 1.05); }
+
+  var SECTIONS=["wmq-parent","wmq-blockintro","wmq-ready","wmq-present","wmq-recall","wmq-recall-grid","wmq-nback","wmq-feedback","wmq-results"];
+  function show(id){
+    SECTIONS.forEach(function(s){var el=$(s); if(el) el.hidden=(s!==id);});
+    $("wmq-progress").hidden = (id==="wmq-parent"||id==="wmq-results");
+  }
+  function round(){return ROUNDS[S.ri];}
+  function setProgress(){
+    $("wmq-pbar-label").textContent="Game "+(S.ri+1)+" of "+ROUNDS.length+": "+round().name;
+    var seg=$("wmq-pbar-seg"); seg.innerHTML="";
+    for(var i=0;i<ROUNDS.length;i++){var s=document.createElement("span");
+      s.className = i<S.ri?"done":(i===S.ri?"active":""); seg.appendChild(s);}
+  }
+
+  function makeDigitSeq(n){var a=[],prev=-1;for(var i=0;i<n;i++){var d=Math.floor(Math.random()*10),g=0;
+    while(d===prev&&g<6){d=Math.floor(Math.random()*10);g++;}a.push(d);prev=d;}return a;}
+  function makeSpatialSeq(n){var a=[],prev=-1;for(var i=0;i<n;i++){var c=Math.floor(Math.random()*GRID),g=0;
+    while(c===prev&&g<8){c=Math.floor(Math.random()*GRID);g++;}a.push(c);prev=c;}return a;}
+  function makeNbackStream(len,targets,n){
+    var seq=[],i,r;
+    for(i=0;i<len;i++){r=Math.floor(Math.random()*NB_ICONS.length);
+      if(i>=n&&r===seq[i-n])r=(r+1)%NB_ICONS.length; seq.push(r);}
+    var pos=[];for(i=n;i<len;i++)pos.push(i);
+    for(i=pos.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=pos[i];pos[i]=pos[j];pos[j]=t;}
+    var chosen=[];for(var k=0;k<pos.length&&chosen.length<targets;k++){var p=pos[k];
+      if(chosen.indexOf(p-1)===-1&&chosen.indexOf(p+1)===-1){chosen.push(p);seq[p]=seq[p-n];}}
+    return seq;
+  }
+  function buildGrid(el,interactive){el.innerHTML="";for(var i=0;i<GRID;i++){(function(idx){
+    var c=document.createElement("div");c.className="wmq-cell";
+    if(interactive)c.addEventListener("click",function(){onCellTap(idx,c);});el.appendChild(c);})(i);}}
+
+  // ---- Parent intro / age ---------------------------------------------------
+  function buildAges(){
+    var wrap=$("wmq-ages"); wrap.innerHTML="";
+    [6,7,8,9,10,11,12].forEach(function(a){
+      var b=document.createElement("button");
+      b.type="button"; b.className="wmq-age"; b.textContent=String(a);
+      b.addEventListener("click",function(){
+        selectedAge=a;
+        Array.prototype.forEach.call(wrap.children,function(c){c.classList.remove("sel");});
+        b.classList.add("sel"); $("wmq-parent-go").disabled=false;
+      });
+      wrap.appendChild(b);
+    });
+  }
+
+  // ---- Round intro ----------------------------------------------------------
+  function showRoundIntro(){
+    setProgress(); show("wmq-blockintro");
+    var r=round();
+    $("wmq-round-tag").textContent="Game "+(S.ri+1)+" of "+ROUNDS.length;
+    $("wmq-block-go").textContent="Let's practice";
+    if(r.type==="digit"){
+      $("wmq-block-title").textContent="Game 1: Numbers";
+      $("wmq-block-desc").textContent="Numbers will pop up one at a time, then hide.";
+      $("wmq-block-how").innerHTML="<ol><li>Watch the numbers.</li><li>Then tap them in the <strong>same order</strong>.</li><li>It gets a little longer each time.</li></ol>";
+    } else if(r.type==="spatial"){
+      $("wmq-block-title").textContent="Game 2: Light-up squares";
+      $("wmq-block-desc").textContent="Squares will light up one at a time.";
+      $("wmq-block-how").innerHTML="<ol><li>Watch which squares light up.</li><li>Then tap them in the <strong>same order</strong>.</li><li>It gets a little longer each time.</li></ol>";
+    } else {
+      $("wmq-block-title").textContent="Game 3: Matching";
+      $("wmq-block-desc").textContent="Pictures will go by one at a time.";
+      $("wmq-block-how").innerHTML="<ol><li>Tap <strong>SAME</strong> when a picture matches the one <strong>right before</strong> it.</li><li>If it is different, just wait for the next one.</li></ol>";
+    }
+  }
+
+  function beginPractice(){ S.practice=true; var r=round();
+    if(r.type==="nback"){startNback(true);} else {S.len=r.startLen;runSpanTrial();} }
+  function showReady(){ show("wmq-ready"); setProgress();
+    $("wmq-ready-text").textContent = round().type==="nback"?"Now let's play for real. Ready?":"Now let's play for real. Ready?"; }
+  function beginScored(){ S.practice=false; var r=round();
+    S.results[r.key]={points:0,span:0,trials:0,perfect:0};
+    if(r.type==="nback"){startNback(false);} else {S.len=r.startLen;S.trialInLen=0;S.perfectInLen=0;runSpanTrial();} }
+
+  // ---- Span ------------------------------------------------------------------
+  function runSpanTrial(){ var r=round(); S.entry=[];
+    S.seq = r.type==="spatial"?makeSpatialSeq(S.len):makeDigitSeq(S.len); presentSpan(); }
+  function presentSpan(){
+    var r=round(); show("wmq-present");
+    $("wmq-present-label").textContent=(S.practice?"Practice · ":"")+r.name;
+    $("wmq-watch").textContent="Watch closely…";
+    var isGrid=(r.type==="spatial");
+    $("wmq-digit").hidden=isGrid; $("wmq-grid-show").hidden=!isGrid;
+    if(isGrid){ buildGrid($("wmq-grid-show"),false); flashGrid(0); }
+    else { $("wmq-digit").classList.remove("wmq-iconmode"); $("wmq-digit").textContent=""; flashDigit(0); }
+  }
+  function flashDigit(i){var el=$("wmq-digit");setTimeout(function step(){
+    if(i>=S.seq.length){setTimeout(beginRecall,CFG.blankMs);return;}
+    el.style.opacity="1";el.textContent=String(S.seq[i]);
+    setTimeout(function(){el.style.opacity="0";el.textContent="";i++;setTimeout(step,CFG.blankMs);},CFG.showMs);
+  },i===0?CFG.preCountMs:0);}
+  function flashGrid(i){var cells=$("wmq-grid-show").children;setTimeout(function step(){
+    if(i>=S.seq.length){setTimeout(beginRecall,CFG.blankMs);return;}
+    var c=cells[S.seq[i]];c.classList.add("lit");
+    setTimeout(function(){c.classList.remove("lit");i++;setTimeout(step,CFG.blankMs);},CFG.showMs);
+  },i===0?CFG.preCountMs:0);}
+  function beginRecall(){ var r=round(); S.entry=[]; S.recallStart=now();
+    if(r.type==="spatial"){ show("wmq-recall-grid");
+      $("wmq-recallg-label").textContent=(S.practice?"Practice · ":"")+r.name;
+      buildGrid($("wmq-grid-resp"),true); $("wmq-gsubmit").disabled=true;
+    } else { show("wmq-recall");
+      $("wmq-recall-label").textContent=(S.practice?"Practice · ":"")+r.name;
+      $("wmq-recall-instr").textContent="Tap the numbers in the SAME order you saw them.";
+      buildKeypad(); renderEntry(); $("wmq-submit").disabled=true; }
+  }
+  function buildKeypad(){var pad=$("wmq-keypad");pad.innerHTML="";
+    [1,2,3,4,5,6,7,8,9,0].forEach(function(nn){var b=document.createElement("button");
+      b.type="button";b.className="wmq-key"+(nn===0?" wmq-key-zero":"");b.textContent=String(nn);
+      b.addEventListener("click",function(){if(S.entry.length<S.len){S.entry.push(nn);renderEntry();}});
+      pad.appendChild(b);});}
+  function renderEntry(){var wrap=$("wmq-entry");wrap.innerHTML="";
+    for(var i=0;i<S.len;i++){var slot=document.createElement("div");var filled=i<S.entry.length;
+      slot.className="wmq-slot"+(filled?" wmq-filled":"");slot.textContent=filled?String(S.entry[i]):"";wrap.appendChild(slot);}
+    $("wmq-submit").disabled=(S.entry.length!==S.len);}
+  function onCellTap(idx,cell){if(S.entry.length>=S.len)return;if(cell.classList.contains("picked"))return;
+    S.entry.push(idx);cell.classList.add("picked");cell.textContent=String(S.entry.length);
+    $("wmq-gsubmit").disabled=(S.entry.length!==S.len);}
+  function clearGrid(){S.entry=[];var cells=$("wmq-grid-resp").children;
+    for(var i=0;i<cells.length;i++){cells[i].classList.remove("picked");cells[i].textContent="";}$("wmq-gsubmit").disabled=true;}
+
+  function submitSpan(){
+    var r=round(); var btn=r.type==="spatial"?$("wmq-gsubmit"):$("wmq-submit");
+    if(btn.disabled)return;
+    var rt=now()-S.recallStart;
+    var target=S.seq.slice(); var correctPos=0;
+    for(var i=0;i<target.length;i++){if(S.entry[i]===target[i])correctPos++;}
+    var perfect=(correctPos===target.length);
+    if(!S.practice){var res=S.results[r.key];
+      res.points+=correctPos;res.trials++;if(perfect){res.perfect++;res.span=Math.max(res.span,S.len);}
+      S.rt.push(rt);if(perfect)S.perfectInLen++;S.trialInLen++;}
+    flashSpanFeedback(perfect);
+  }
+  function flashSpanFeedback(perfect){
+    show("wmq-feedback");
+    $("wmq-fb-icon").textContent=perfect?"🌟":"💪";
+    $("wmq-fb-text").textContent=perfect?"Nice!":"Good try!";
+    $("wmq-fb-sub").textContent=S.practice?"That was practice. Ready for the real one?":"";
+    setTimeout(afterSpan,CFG.feedbackMs+(S.practice?300:0));
+  }
+  function afterSpan(){var r=round();
+    if(S.practice){showReady();return;}
+    if(S.trialInLen<2){runSpanTrial();return;}
+    if(S.perfectInLen>=1&&S.len<r.maxLen){S.len++;S.trialInLen=0;S.perfectInLen=0;runSpanTrial();return;}
+    nextRound();}
+
+  // ---- N-back (1-back) -------------------------------------------------------
+  function startNback(isPractice){var r=round();S.practice=isPractice;
+    var len=isPractice?6:r.streamLen; var tgt=isPractice?2:r.targets;
+    S.nb={stream:makeNbackStream(len,tgt,r.n),i:-1,responded:false,hits:0,fa:0,miss:0,cr:0,targets:0,nontargets:0,rts:[]};
+    show("wmq-nback");
+    $("wmq-nback-label").textContent=(isPractice?"Practice · ":"")+"Matching";
+    $("wmq-nback-feed").innerHTML="&nbsp;";$("wmq-nback-item").textContent="";$("wmq-nback-match").disabled=true;
+    setTimeout(nbackNext,800);}
+  function nbackNext(){var r=round();S.nb.i++;var nb=S.nb;
+    if(nb.i>=nb.stream.length){endNback();return;}
+    nb.responded=false;nb.shownAt=now();
+    $("wmq-nback-item").textContent=NB_ICONS[nb.stream[nb.i]];
+    $("wmq-nback-match").disabled=(nb.i<r.n);
+    if(S.practice)$("wmq-nback-feed").innerHTML="&nbsp;";
+    setTimeout(nbackResolve,r.itemMs);}
+  function nbackResolve(){var r=round();var nb=S.nb;
+    if(nb.i>=r.n){var isTarget=(nb.stream[nb.i]===nb.stream[nb.i-r.n]);
+      if(isTarget)nb.targets++;else nb.nontargets++;
+      if(isTarget&&nb.responded)nb.hits++;else if(isTarget&&!nb.responded)nb.miss++;
+      else if(!isTarget&&nb.responded)nb.fa++;else nb.cr++;
+      if(S.practice){var ok=(isTarget===nb.responded);
+        $("wmq-nback-feed").style.color=ok?"var(--wmq-green)":"var(--wmq-warn)";
+        $("wmq-nback-feed").textContent=isTarget?(nb.responded?"Yes, a match!":"That one was a match"):(nb.responded?"Not a match":"Good, not a match");}}
+    $("wmq-nback-item").style.opacity="0";
+    setTimeout(function(){$("wmq-nback-item").style.opacity="1";nbackNext();},r.isiMs);}
+  function nbackRespond(){var nb=S.nb,r=round();if(!nb||nb.responded||nb.i<r.n)return;
+    nb.responded=true;nb.rts.push(now()-nb.shownAt);$("wmq-nback-match").disabled=true;}
+  function endNback(){var nb=S.nb;if(S.practice){showReady();return;}
+    var hitRate=nb.targets?nb.hits/nb.targets:0;var crRate=nb.nontargets?nb.cr/nb.nontargets:0;
+    var bal=(hitRate+crRate)/2;var medRt=median(nb.rts);
+    S.results[round().key]={balAcc:Math.round(bal*100),hits:nb.hits,targets:nb.targets,hitRt:medRt};
+    if(!isNaN(medRt))S.rt.push(medRt); nextRound();}
+
+  function nextRound(){ if(S.ri<ROUNDS.length-1){S.ri++;showRoundIntro();} else showResults(); }
+
+  // ---- Scoring (age-scaled) -------------------------------------------------
+  function subScore(r){var res=S.results[r.key]||{};
+    if(r.type==="nback"){var bal=(res.balAcc||0);return clamp(Math.round(50*(bal-50)/20),0,100);} // 1-back, ~70% -> 50
+    var pts=res.points||0; var typ=r.typBase*ageFactor(); return clamp(Math.round(50*pts/typ),0,100);}
+  function levelFor(s){ if(s>=70)return "Strong for their age"; if(s>=58)return "Above average for their age";
+    if(s>=42)return "Right on track for their age"; if(s>=30)return "A bit below their age"; return "Below their age, worth a closer look"; }
+  function overallBand(idx){ if(idx>=68)return{b:"Strong"}; if(idx>=42)return{b:"On track"};
+    if(idx>=30)return{b:"A bit behind today"}; return{b:"Worth a closer look"}; }
+  function median(a){if(!a||!a.length)return NaN;var b=a.slice().sort(function(x,y){return x-y;});var m=Math.floor(b.length/2);return b.length%2?b[m]:(b[m-1]+b[m])/2;}
+
+  function showResults(){
+    show("wmq-results");
+    var subs=ROUNDS.map(function(r){return {r:r,s:subScore(r)};});
+    var idx=Math.round(subs.reduce(function(a,x){return a+x.s;},0)/subs.length);
+    var band=overallBand(idx);
+    $("wmq-overall-num").textContent=idx; $("wmq-overall-band").textContent=band.b;
+    $("wmq-results-note").textContent="Here is your "+S.childAge+"-year-old's working memory profile, compared to others their age.";
+    var bars=$("wmq-bars"); bars.innerHTML="";
+    subs.forEach(function(x){
+      var raw=(x.r.type==="nback")?((S.results[x.r.key]||{}).balAcc+"% matches")
+                                  :("remembered "+((S.results[x.r.key]||{}).span||0)+" in a row");
+      var row=document.createElement("div");row.className="wmq-barrow";
+      row.innerHTML='<div class="wmq-barhead"><span class="nm">'+x.r.domain+'</span><span class="lv">'+levelFor(x.s)+'</span></div>'+
+        '<div class="wmq-bartrack"><div class="wmq-barfill" style="width:'+x.s+'%"></div></div>'+
+        '<div class="wmq-barsub">'+x.r.name+' · '+raw+'</div>';
+      bars.appendChild(row);
+    });
+    var byScore=subs.slice().sort(function(a,b){return b.s-a.s;});
+    var top=byScore[0],low=byScore[byScore.length-1];
+    var parts=[];
+    if(top.s-low.s>=14){ parts.push("Your child's strongest area is "+kidMeaning(top.r.key)+" The area to support most is "+kidMeaning(low.r.key)); }
+    else { parts.push("Your child's three areas are fairly even, with no single area far ahead or behind."); }
+    parts.push("These scores are compared to other children around age "+S.childAge+".");
+    $("wmq-profile").textContent=parts.join(" ");
+    $("wmq-cta").innerHTML='<p class="wmq-next">Add your email on the next step to get the full profile, plus simple, playful ways to support your child at home.</p>';
+    emitResult(idx,band.b,subs);
+  }
+  function kidMeaning(key){switch(key){
+    case "fwd": return "number memory, holding numbers and spoken instructions.";
+    case "spa": return "picture-place memory, remembering where things are.";
+    default:    return "keeping up, staying with something as it changes.";}}
+
+  function emitResult(idx,band,subs){var payload={index:idx,band:band,childAge:S.childAge};
+    subs.forEach(function(x){payload[x.r.key]={sub:x.s,level:levelFor(x.s),raw:S.results[x.r.key]||{}};});
+    try{window.KAIZEN_WMQ_RESULT=payload;}catch(e){}
+    try{if(window.parent&&window.parent!==window)window.parent.postMessage({type:"KAIZEN_WMQ_RESULT",payload:payload},"*");}catch(e){}
+    try{var hi=document.querySelector('input[name="wmq_result"]');if(hi)hi.value=JSON.stringify(payload);}catch(e){}}
+
+  function startGames(){ resetAll(); showRoundIntro(); }
+  function init(){
+    resetAll(); buildAges();
+    $("wmq-parent-go").addEventListener("click", function(){ if(selectedAge){ startGames(); } });
+    $("wmq-block-go").addEventListener("click", beginPractice);
+    $("wmq-ready-go").addEventListener("click", beginScored);
+    $("wmq-submit").addEventListener("click", submitSpan);
+    $("wmq-gsubmit").addEventListener("click", submitSpan);
+    $("wmq-clear").addEventListener("click", function(){S.entry=[];renderEntry();});
+    $("wmq-gclear").addEventListener("click", clearGrid);
+    $("wmq-nback-match").addEventListener("click", nbackRespond);
+    $("wmq-retake").addEventListener("click", function(){ selectedAge=0; $("wmq-parent-go").disabled=true;
+      Array.prototype.forEach.call($("wmq-ages").children,function(c){c.classList.remove("sel");}); show("wmq-parent"); });
+    document.addEventListener("keydown", function(e){
+      if(!$("wmq-recall").hidden){
+        if(e.key>="0"&&e.key<="9"){if(S.entry.length<S.len){S.entry.push(Number(e.key));renderEntry();}}
+        else if(e.key==="Backspace"){S.entry.pop();renderEntry();}
+        else if(e.key==="Enter"){submitSpan();}
+      } else if(!$("wmq-nback").hidden&&(e.key===" "||e.key==="Enter")){e.preventDefault();nbackRespond();}
+    });
+    show("wmq-parent");
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init); else init();
+})();
+</script>
