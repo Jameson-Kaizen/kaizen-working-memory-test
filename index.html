@@ -1,63 +1,89 @@
 <!--
-  Kaizen Working Memory Test - Adaptive Span (Forward digits, Backward digits, Picture span)
-  Self-contained widget for Outgrow Custom HTML, or standalone / iframe embed.
+  Kaizen Working Memory Test (v2) - 4-domain adaptive battery with a cognitive profile.
 
-  WHY this is a REAL working-memory test (not self-report):
-    - A sequence (numbers, then pictures) is shown one at a time, then REMOVED from the screen.
-    - The participant reproduces it from memory: forward order, reverse order, and a picture sequence.
-    - Backward span requires mental manipulation (the defining feature of working memory); the
-      picture round taxes the separate visual/visuospatial system.
-    - Span is scored adaptively (clinical-style: 2 trials per length, advance on >=1 correct,
-      stop when both trials at a length fail). Score = longest length passed.
+  Rounds (each with a practice trial first, progress bar, clearer instructions):
+    1. Numbers forward  -> verbal storage      (digit span forward)
+    2. Numbers backward -> verbal manipulation  (digit span backward)
+    3. Spatial pattern  -> visuospatial memory  (Corsi-style grid span; harder to verbalize)
+    4. Updating (2-back) -> live updating        (n-back; the most "executive" component)
 
-  COMPLIANCE: framed as an informal screening estimate, NOT a clinical/diagnostic assessment.
+  Scoring (more reliable than longest-length):
+    - Span rounds use PARTIAL-CREDIT unit scoring: each trial earns 1 point per item recalled
+      in the correct serial position (Wechsler-style, 2 trials per length, discontinue after a
+      length where neither trial is perfect). A single lucky trial no longer jumps a whole level.
+    - 2-back uses balanced accuracy (hit rate and correct-rejection rate averaged).
+    - Each round maps to a 0-100 sub-score; the four sub-scores form the cognitive profile.
+    - Recall reaction time is captured for a processing-speed read.
 
-  INTEGRATION: when the test finishes, the final scores are emitted three ways so GHL/Outgrow
-  can pick them up later (see emitResult()): window.KAIZEN_WMQ_RESULT, a postMessage to parent,
-  and an optional hidden-input write. None of these are required for the test itself to work.
+  COMPLIANCE: informal screening estimate, NOT a clinical/diagnostic assessment.
+  INTEGRATION: emits the full result via window.KAIZEN_WMQ_RESULT + postMessage + optional
+  hidden input wmq_result. The booking CTA lives on the Outgrow Result screen (after the form).
 -->
 <div id="wmq-root" class="wmq-root">
   <noscript>
     <div class="wmq-card"><p class="wmq-lead">This test needs JavaScript enabled to run. Please enable JavaScript and reload.</p></div>
   </noscript>
 
+  <!-- PROGRESS BAR (shown during rounds) -->
+  <div id="wmq-progress" class="wmq-pbar" hidden>
+    <div class="wmq-pbar-label" id="wmq-pbar-label"></div>
+    <div class="wmq-pbar-seg" id="wmq-pbar-seg"></div>
+  </div>
+
   <!-- INTRO -->
   <section id="wmq-intro" class="wmq-card" hidden>
     <div class="wmq-badge" id="wmq-heartbeat">● live</div>
     <h2 class="wmq-h2">Working Memory Test</h2>
-    <p class="wmq-lead">This is a real test of your working memory, the mental "scratchpad" you use to hold and work with information for a few seconds.</p>
+    <p class="wmq-lead">This measures your working memory, the mental "scratchpad" you use to hold and work with information for a few seconds. It is the engine behind focus, mental math, following instructions, and keeping your place in a task.</p>
+    <p class="wmq-sub">Four short rounds, about 6 minutes. You get a practice try before each one.</p>
     <ul class="wmq-list">
-      <li>You'll see a short sequence, one item at a time, then it disappears.</li>
-      <li><strong>Round 1 (Numbers forward):</strong> tap the numbers back in the <em>same</em> order.</li>
-      <li><strong>Round 2 (Numbers backward):</strong> tap them back in <em>reverse</em> order.</li>
-      <li><strong>Round 3 (Pictures):</strong> tap a sequence of pictures back in the <em>same</em> order.</li>
-      <li>Each sequence gets longer until it becomes too hard. Takes about 5 minutes.</li>
+      <li><strong>Numbers forward and backward</strong> verbal memory.</li>
+      <li><strong>Spatial pattern</strong> visual memory for positions.</li>
+      <li><strong>Updating</strong> keeping track as things change.</li>
     </ul>
-    <p class="wmq-tip">For an accurate read: don't write anything down, and find a quiet moment without distractions.</p>
+    <div class="wmq-tip">
+      <strong>To get an accurate read:</strong>
+      <ul class="wmq-tiplist">
+        <li>Use a quiet moment with no distractions.</li>
+        <li>Do not write anything down or say it out loud.</li>
+        <li>Watch closely. Each item disappears before you answer.</li>
+        <li>Go with your gut and keep a steady pace.</li>
+      </ul>
+    </div>
     <button class="wmq-btn wmq-btn-primary" id="wmq-start">Start the test</button>
     <p class="wmq-fine">An informal estimate for your own insight, not a clinical or diagnostic assessment.</p>
   </section>
 
-  <!-- BLOCK INTRO -->
+  <!-- ROUND INTRO -->
   <section id="wmq-blockintro" class="wmq-card" hidden>
+    <div class="wmq-roundtag" id="wmq-round-tag"></div>
     <h2 class="wmq-h2" id="wmq-block-title"></h2>
     <p class="wmq-lead" id="wmq-block-desc"></p>
-    <div class="wmq-demo" id="wmq-block-demo"></div>
-    <button class="wmq-btn wmq-btn-primary" id="wmq-block-go"></button>
+    <div class="wmq-howto" id="wmq-block-how"></div>
+    <button class="wmq-btn wmq-btn-primary" id="wmq-block-go">Try a quick practice</button>
+  </section>
+
+  <!-- READY (after practice) -->
+  <section id="wmq-ready" class="wmq-card" hidden>
+    <div class="wmq-fb-icon" style="color:var(--wmq-green)">✓</div>
+    <h2 class="wmq-h2">Practice done</h2>
+    <p class="wmq-lead" id="wmq-ready-text">Now the real round begins. This one counts.</p>
+    <button class="wmq-btn wmq-btn-primary" id="wmq-ready-go">Start the round</button>
   </section>
 
   <!-- PRESENTATION -->
   <section id="wmq-present" class="wmq-card wmq-present" hidden>
-    <div class="wmq-progress"><span id="wmq-present-label"></span></div>
+    <div class="wmq-progress2"><span id="wmq-present-label"></span></div>
     <div class="wmq-stage" aria-live="polite">
       <div class="wmq-digit" id="wmq-digit"></div>
+      <div class="wmq-grid wmq-grid-show" id="wmq-grid-show" hidden></div>
     </div>
-    <p class="wmq-watch">Watch carefully…</p>
+    <p class="wmq-watch" id="wmq-watch">Watch carefully…</p>
   </section>
 
-  <!-- RECALL -->
+  <!-- RECALL: DIGIT -->
   <section id="wmq-recall" class="wmq-card" hidden>
-    <div class="wmq-progress"><span id="wmq-recall-label"></span></div>
+    <div class="wmq-progress2"><span id="wmq-recall-label"></span></div>
     <p class="wmq-recall-instr" id="wmq-recall-instr"></p>
     <div class="wmq-entry" id="wmq-entry" aria-live="polite"></div>
     <div class="wmq-keypad" id="wmq-keypad"></div>
@@ -67,35 +93,45 @@
     </div>
   </section>
 
+  <!-- RECALL: SPATIAL -->
+  <section id="wmq-recall-grid" class="wmq-card" hidden>
+    <div class="wmq-progress2"><span id="wmq-recallg-label"></span></div>
+    <p class="wmq-recall-instr">Tap the squares in the SAME order they lit up.</p>
+    <div class="wmq-grid wmq-grid-resp" id="wmq-grid-resp"></div>
+    <div class="wmq-actions">
+      <button class="wmq-btn wmq-btn-ghost" id="wmq-gclear">Clear</button>
+      <button class="wmq-btn wmq-btn-primary" id="wmq-gsubmit" disabled>Submit</button>
+    </div>
+  </section>
+
+  <!-- N-BACK -->
+  <section id="wmq-nback" class="wmq-card" hidden>
+    <div class="wmq-progress2"><span id="wmq-nback-label"></span></div>
+    <p class="wmq-recall-instr" id="wmq-nback-instr">Tap MATCH when the picture is the same as the one 2 steps back.</p>
+    <div class="wmq-stage wmq-stage-nb">
+      <div class="wmq-digit wmq-iconmode" id="wmq-nback-item"></div>
+    </div>
+    <button class="wmq-btn wmq-btn-primary wmq-nback-btn" id="wmq-nback-match">MATCH</button>
+    <div class="wmq-nback-feed" id="wmq-nback-feed">&nbsp;</div>
+  </section>
+
   <!-- FEEDBACK -->
   <section id="wmq-feedback" class="wmq-card wmq-feedback" hidden>
     <div class="wmq-fb-icon" id="wmq-fb-icon"></div>
     <p class="wmq-fb-text" id="wmq-fb-text"></p>
+    <p class="wmq-fb-sub" id="wmq-fb-sub"></p>
   </section>
 
-  <!-- RESULTS -->
+  <!-- RESULTS (cognitive profile) -->
   <section id="wmq-results" class="wmq-card" hidden>
-    <h2 class="wmq-h2">Your Working Memory Results</h2>
-    <div class="wmq-scorewrap">
-      <div class="wmq-score">
-        <div class="wmq-score-num" id="wmq-fwd-num">–</div>
-        <div class="wmq-score-lbl">Numbers forward</div>
-      </div>
-      <div class="wmq-score">
-        <div class="wmq-score-num" id="wmq-bwd-num">–</div>
-        <div class="wmq-score-lbl">Numbers backward</div>
-      </div>
-      <div class="wmq-score">
-        <div class="wmq-score-num" id="wmq-img-num">–</div>
-        <div class="wmq-score-lbl">Picture span</div>
-      </div>
-      <div class="wmq-score wmq-score-main">
-        <div class="wmq-score-num" id="wmq-idx-num">–</div>
-        <div class="wmq-score-lbl">Working memory index</div>
-      </div>
+    <h2 class="wmq-h2">Your Working Memory Profile</h2>
+    <div class="wmq-overall">
+      <div class="wmq-overall-num" id="wmq-overall-num">–</div>
+      <div class="wmq-overall-lbl">Overall index<span id="wmq-overall-band"></span></div>
     </div>
-    <div class="wmq-band" id="wmq-band"></div>
-    <p class="wmq-interp" id="wmq-interp"></p>
+    <div class="wmq-bars" id="wmq-bars"></div>
+    <p class="wmq-interp" id="wmq-profile"></p>
+    <p class="wmq-speed" id="wmq-speed"></p>
     <div class="wmq-cta" id="wmq-cta"></div>
     <button class="wmq-btn wmq-btn-ghost" id="wmq-retake">Take it again</button>
     <p class="wmq-fine">Screening estimate only. Span varies with sleep, stress, caffeine, and focus. One session is a snapshot, not a diagnosis.</p>
@@ -103,25 +139,25 @@
 </div>
 
 <style>
-  /* Transparent page bg so, when iframe-embedded, surrounding whitespace blends with the host page. */
   html,body{margin:0;background:transparent;}
-  /* All styles namespaced under .wmq-root to avoid colliding with the host page. */
   .wmq-root{--wmq-green:#2f8f5b;--wmq-green-d:#246c45;--wmq-ink:#243027;--wmq-muted:#6b7a70;
-    --wmq-bg:#ffffff;--wmq-soft:#f1f6f2;--wmq-line:#dde7e0;--wmq-warn:#c0563b;--wmq-radius:16px;
+    --wmq-bg:#ffffff;--wmq-soft:#f1f6f2;--wmq-line:#dde7e0;--wmq-warn:#c0563b;--wmq-gold:#c98a2b;--wmq-radius:16px;
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     color:var(--wmq-ink);max-width:560px;margin:0 auto;padding:8px;box-sizing:border-box;line-height:1.5;}
   .wmq-root *{box-sizing:border-box;}
-  /* [hidden] must beat the display:flex rules below (author display wins over UA hidden) */
   .wmq-root [hidden]{display:none!important;}
   .wmq-card{background:var(--wmq-bg);border:1px solid var(--wmq-line);border-radius:var(--wmq-radius);
-    padding:28px 26px;text-align:center;box-shadow:0 2px 14px rgba(36,108,69,.06);}
+    padding:26px 24px;text-align:center;box-shadow:0 2px 14px rgba(36,108,69,.06);}
   .wmq-badge{display:inline-block;font-size:12px;font-weight:600;color:var(--wmq-green-d);
-    background:var(--wmq-soft);border-radius:999px;padding:3px 10px;margin-bottom:14px;letter-spacing:.02em;}
-  .wmq-h2{font-size:24px;margin:0 0 10px;font-weight:700;color:var(--wmq-ink);}
-  .wmq-lead{font-size:16px;color:var(--wmq-ink);margin:0 0 16px;}
-  .wmq-list{text-align:left;margin:0 auto 16px;max-width:430px;padding-left:20px;color:var(--wmq-ink);font-size:15px;}
-  .wmq-list li{margin-bottom:8px;}
-  .wmq-tip{font-size:14px;color:var(--wmq-muted);background:var(--wmq-soft);border-radius:12px;padding:10px 14px;margin:0 0 18px;}
+    background:var(--wmq-soft);border-radius:999px;padding:3px 10px;margin-bottom:12px;letter-spacing:.02em;}
+  .wmq-h2{font-size:23px;margin:0 0 10px;font-weight:700;color:var(--wmq-ink);}
+  .wmq-lead{font-size:16px;color:var(--wmq-ink);margin:0 0 14px;}
+  .wmq-sub{font-size:14px;color:var(--wmq-muted);margin:0 0 14px;font-weight:600;}
+  .wmq-list{text-align:left;margin:0 auto 14px;max-width:430px;padding-left:20px;color:var(--wmq-ink);font-size:15px;}
+  .wmq-list li{margin-bottom:6px;}
+  .wmq-tip{font-size:14px;color:var(--wmq-ink);background:var(--wmq-soft);border-radius:12px;padding:12px 16px;margin:0 0 18px;text-align:left;}
+  .wmq-tiplist{margin:8px 0 0;padding-left:18px;color:var(--wmq-muted);}
+  .wmq-tiplist li{margin-bottom:4px;}
   .wmq-watch{color:var(--wmq-muted);font-size:14px;margin:18px 0 0;}
   .wmq-fine{font-size:12px;color:var(--wmq-muted);margin:16px 0 0;font-style:italic;}
   .wmq-btn{border:none;border-radius:12px;font-size:16px;font-weight:600;padding:13px 26px;cursor:pointer;
@@ -132,308 +168,544 @@
   .wmq-btn-primary:disabled{background:#b6c9bd;cursor:not-allowed;}
   .wmq-btn-ghost{background:transparent;color:var(--wmq-green-d);border:1px solid var(--wmq-line);}
   .wmq-btn-ghost:hover{background:var(--wmq-soft);}
-  .wmq-progress{font-size:13px;font-weight:600;color:var(--wmq-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}
+  /* progress bar */
+  .wmq-pbar{max-width:560px;margin:0 auto 10px;padding:0 4px;}
+  .wmq-pbar-label{font-size:12px;font-weight:700;color:var(--wmq-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;text-align:center;}
+  .wmq-pbar-seg{display:flex;gap:6px;}
+  .wmq-pbar-seg span{flex:1;height:6px;border-radius:999px;background:var(--wmq-line);}
+  .wmq-pbar-seg span.done{background:var(--wmq-green);}
+  .wmq-pbar-seg span.active{background:var(--wmq-green);opacity:.5;}
+  .wmq-progress2{font-size:13px;font-weight:600;color:var(--wmq-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}
+  .wmq-roundtag{font-size:12px;font-weight:700;color:var(--wmq-green-d);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}
+  .wmq-howto{font-size:15px;color:var(--wmq-ink);background:var(--wmq-soft);border-radius:12px;padding:12px 16px;margin:0 0 18px;text-align:left;}
+  .wmq-howto ol{margin:0;padding-left:20px;}
+  .wmq-howto li{margin-bottom:5px;}
   /* presentation */
-  .wmq-present{min-height:300px;display:flex;flex-direction:column;justify-content:center;}
-  .wmq-stage{display:flex;align-items:center;justify-content:center;min-height:150px;}
-  .wmq-digit{font-size:96px;font-weight:700;color:var(--wmq-green-d);line-height:1;
-    transition:opacity .08s ease;font-variant-numeric:tabular-nums;}
-  .wmq-digit.wmq-iconmode{font-size:82px;}
-  .wmq-demo{font-size:30px;letter-spacing:8px;color:var(--wmq-green-d);font-weight:700;margin:6px 0 20px;}
-  /* recall */
+  .wmq-present{min-height:320px;display:flex;flex-direction:column;justify-content:center;}
+  .wmq-stage{display:flex;align-items:center;justify-content:center;min-height:180px;}
+  .wmq-stage-nb{min-height:150px;}
+  .wmq-digit{font-size:92px;font-weight:700;color:var(--wmq-green-d);line-height:1;transition:opacity .08s ease;font-variant-numeric:tabular-nums;}
+  .wmq-digit.wmq-iconmode{font-size:78px;}
+  /* grid (Corsi) */
+  .wmq-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:300px;margin:0 auto;width:100%;}
+  .wmq-cell{aspect-ratio:1/1;border-radius:12px;background:var(--wmq-soft);border:2px solid var(--wmq-line);
+    display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff;transition:background .1s,transform .08s;}
+  .wmq-grid-resp .wmq-cell{cursor:pointer;}
+  .wmq-grid-resp .wmq-cell:hover{background:#e2efe7;}
+  .wmq-cell.lit{background:var(--wmq-green);border-color:var(--wmq-green-d);transform:scale(1.05);}
+  .wmq-cell.picked{background:var(--wmq-green-d);border-color:var(--wmq-green-d);}
+  /* recall digit */
   .wmq-recall-instr{font-size:17px;font-weight:600;margin:6px 0 14px;}
   .wmq-entry{min-height:56px;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
-  .wmq-slot{width:46px;height:54px;border:2px solid var(--wmq-line);border-radius:10px;display:flex;
-    align-items:center;justify-content:center;font-size:26px;font-weight:700;color:var(--wmq-ink);background:#fafdfb;}
+  .wmq-slot{width:46px;height:54px;border:2px solid var(--wmq-line);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:var(--wmq-ink);background:#fafdfb;}
   .wmq-slot.wmq-filled{border-color:var(--wmq-green);background:var(--wmq-soft);}
   .wmq-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:300px;margin:0 auto 18px;}
-  .wmq-key{background:var(--wmq-soft);border:1px solid var(--wmq-line);border-radius:12px;font-size:26px;
-    font-weight:700;color:var(--wmq-ink);padding:16px 0;cursor:pointer;font-family:inherit;transition:background .1s;}
+  .wmq-key{background:var(--wmq-soft);border:1px solid var(--wmq-line);border-radius:12px;font-size:26px;font-weight:700;color:var(--wmq-ink);padding:16px 0;cursor:pointer;font-family:inherit;transition:background .1s;}
   .wmq-key:hover{background:#e2efe7;}
   .wmq-key:active{background:#d2e7da;}
-  .wmq-key-icon{font-size:30px;padding:12px 0;}
   .wmq-key-zero{grid-column:2;}
-  .wmq-actions{display:flex;gap:12px;justify-content:center;}
+  .wmq-actions{display:flex;gap:12px;justify-content:center;margin-top:18px;}
+  /* n-back */
+  .wmq-nback-btn{width:80%;max-width:320px;margin:8px auto 0;display:block;font-size:18px;}
+  .wmq-nback-feed{min-height:24px;font-size:15px;font-weight:600;margin-top:10px;}
   /* feedback */
   .wmq-feedback{min-height:200px;display:flex;flex-direction:column;justify-content:center;}
-  .wmq-fb-icon{font-size:48px;margin-bottom:10px;}
+  .wmq-fb-icon{font-size:46px;margin-bottom:8px;}
   .wmq-fb-text{font-size:18px;font-weight:600;margin:0;}
-  /* results */
-  .wmq-scorewrap{display:flex;gap:12px;justify-content:center;margin:20px 0;flex-wrap:wrap;}
-  .wmq-score{background:var(--wmq-soft);border-radius:14px;padding:14px 16px;min-width:104px;}
-  .wmq-score-main{background:var(--wmq-green);color:#fff;}
-  .wmq-score-num{font-size:38px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;}
-  .wmq-score-lbl{font-size:13px;margin-top:6px;opacity:.85;}
-  .wmq-band{display:inline-block;font-size:15px;font-weight:700;padding:6px 16px;border-radius:999px;
-    background:var(--wmq-soft);color:var(--wmq-green-d);margin-bottom:12px;}
-  .wmq-interp{font-size:15px;color:var(--wmq-ink);margin:0 auto 18px;max-width:440px;}
+  .wmq-fb-sub{font-size:14px;color:var(--wmq-muted);margin:6px 0 0;}
+  /* results / profile */
+  .wmq-overall{display:flex;flex-direction:column;align-items:center;justify-content:center;
+    width:150px;height:150px;border-radius:50%;background:var(--wmq-green);color:#fff;margin:14px auto 18px;}
+  .wmq-overall-num{font-size:52px;font-weight:700;line-height:1;}
+  .wmq-overall-lbl{font-size:12px;margin-top:4px;opacity:.9;text-align:center;}
+  .wmq-overall-lbl span{display:block;font-size:13px;font-weight:700;opacity:1;margin-top:2px;}
+  .wmq-bars{text-align:left;max-width:460px;margin:0 auto 18px;}
+  .wmq-barrow{margin-bottom:12px;}
+  .wmq-barhead{display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px;}
+  .wmq-barhead .nm{font-weight:600;color:var(--wmq-ink);}
+  .wmq-barhead .lv{font-weight:600;color:var(--wmq-green-d);}
+  .wmq-bartrack{height:10px;border-radius:999px;background:var(--wmq-soft);overflow:hidden;}
+  .wmq-barfill{height:100%;border-radius:999px;background:var(--wmq-green);transition:width .6s ease;}
+  .wmq-barsub{font-size:12px;color:var(--wmq-muted);margin-top:3px;}
+  .wmq-interp{font-size:15px;color:var(--wmq-ink);margin:0 auto 14px;max-width:460px;text-align:left;}
+  .wmq-speed{font-size:14px;color:var(--wmq-muted);background:var(--wmq-soft);border-radius:10px;padding:10px 14px;margin:0 auto 16px;max-width:460px;}
   .wmq-cta{margin:0 0 16px;}
   .wmq-next{font-size:15px;color:var(--wmq-ink);background:var(--wmq-soft);border-radius:12px;padding:12px 16px;margin:0 auto;max-width:440px;}
   @media (max-width:480px){
-    .wmq-card{padding:22px 16px;}
-    .wmq-digit{font-size:78px;}
-    .wmq-digit.wmq-iconmode{font-size:70px;}
-    .wmq-h2{font-size:21px;}
+    .wmq-card{padding:22px 15px;}
+    .wmq-digit{font-size:74px;}
+    .wmq-digit.wmq-iconmode{font-size:66px;}
+    .wmq-h2{font-size:20px;}
   }
 </style>
 
 <script>
 (function(){
   "use strict";
-  var $ = function(id){ return document.getElementById(id); };
+  var $=function(id){return document.getElementById(id);};
+  var now=function(){return (window.performance&&performance.now)?performance.now():Date.now();};
+  var clamp=function(v,lo,hi){return Math.max(lo,Math.min(hi,v));};
 
-  // Picture set for Round 3 (visual span). 9 distinct, easily told-apart symbols -> 3x3 palette.
-  var ICONS = ["🍎","🚗","⭐","🐶","🌙","🔑","🎈","🌳","🔔"];
+  var NB_ICONS=["🍎","🚗","⭐","🌙","🔑","🔔"];
 
-  // ---- Config ---------------------------------------------------------------
-  var CFG = {
-    startLen: 3,
-    maxLenFwd: 9,
-    maxLenBwd: 8,
-    maxLenImg: 7,
-    trialsPerLen: 2,
-    advanceOn: 1,          // advance to next length if >= this many correct of trialsPerLen
-    showMs: 900,           // each item visible
-    blankMs: 280,          // gap between items
-    preCountMs: 700,       // "get ready" before first item
-    feedbackMs: 1100,
-    // Adult discovery-call booking link. NOTE: the booking CTA now lives on the Outgrow
-    // Result screen (after the lead form), so this is currently unused by the widget,
-    // kept for reference in case the in-test CTA is ever restored.
-    bookingUrl: "https://api.leadconnectorhq.com/widget/booking/ZFEujWUugeTS8QEdA4qB"
-  };
+  // ---- Rounds ---------------------------------------------------------------
+  var ROUNDS=[
+    {key:"fwd", type:"digit",   dir:"fwd", name:"Numbers forward",  domain:"Verbal storage",
+     startLen:3, maxLen:8, typPoints:40},
+    {key:"bwd", type:"digit",   dir:"bwd", name:"Numbers backward", domain:"Verbal manipulation",
+     startLen:3, maxLen:7, typPoints:26},
+    {key:"spa", type:"spatial", dir:"fwd", name:"Spatial pattern",  domain:"Visual memory",
+     startLen:2, maxLen:7, typPoints:24},
+    {key:"upd", type:"nback",   n:2,       name:"Updating",         domain:"Live updating",
+     streamLen:15, targets:5, itemMs:2600, isiMs:350}
+  ];
+  var GRID=16; // 4x4
+
+  var CFG={ showMs:850, blankMs:280, preCountMs:700, feedbackMs:1000 };
 
   // ---- State ----------------------------------------------------------------
-  var S = {
-    block: "fwd",          // "fwd" | "bwd" | "img"
-    len: CFG.startLen,
-    trialInLen: 0,
-    correctInLen: 0,
-    seq: [],
-    entry: [],
-    fwdSpan: 0,
-    bwdSpan: 0,
-    imgSpan: 0
-  };
+  var S={};
+  function resetAll(){
+    S={ ri:0, practice:false, len:0, trialInLen:0, perfectInLen:0,
+        seq:[], entry:[], recallStart:0, results:{}, rt:[], busy:false };
+  }
 
-  var SECTIONS = ["wmq-intro","wmq-blockintro","wmq-present","wmq-recall","wmq-feedback","wmq-results"];
-  function show(id){ SECTIONS.forEach(function(s){ var el=$(s); if(el) el.hidden = (s!==id); }); }
+  var SECTIONS=["wmq-intro","wmq-blockintro","wmq-ready","wmq-present","wmq-recall","wmq-recall-grid","wmq-nback","wmq-feedback","wmq-results"];
+  function show(id){
+    SECTIONS.forEach(function(s){var el=$(s); if(el) el.hidden=(s!==id);});
+    $("wmq-progress").hidden = (id==="wmq-intro"||id==="wmq-results");
+  }
+  function round(){return ROUNDS[S.ri];}
 
-  function isImg(){ return S.block==="img"; }
-  function blockName(){ return S.block==="fwd" ? "Forward" : S.block==="bwd" ? "Backward" : "Pictures"; }
-  function glyph(v){ return isImg() ? ICONS[v] : String(v); }     // display token for a value
-  function maxLen(){ return S.block==="fwd" ? CFG.maxLenFwd : S.block==="bwd" ? CFG.maxLenBwd : CFG.maxLenImg; }
-
-  function makeSeq(n){
-    var range = isImg() ? ICONS.length : 10;
-    var a=[], prev=-1;
-    for(var i=0;i<n;i++){ var d=Math.floor(Math.random()*range); var guard=0;
-      while(d===prev && guard<6){ d=Math.floor(Math.random()*range); guard++; }   // avoid immediate repeats
-      a.push(d); prev=d;
+  function setProgress(){
+    $("wmq-pbar-label").textContent="Round "+(S.ri+1)+" of "+ROUNDS.length+": "+round().name;
+    var seg=$("wmq-pbar-seg"); seg.innerHTML="";
+    for(var i=0;i<ROUNDS.length;i++){
+      var s=document.createElement("span");
+      s.className = i<S.ri ? "done" : (i===S.ri ? "active" : "");
+      seg.appendChild(s);
     }
+  }
+
+  // ---- Sequence builders ----------------------------------------------------
+  function makeDigitSeq(n){
+    var a=[],prev=-1;
+    for(var i=0;i<n;i++){var d=Math.floor(Math.random()*10),g=0;
+      while(d===prev&&g<6){d=Math.floor(Math.random()*10);g++;} a.push(d);prev=d;}
     return a;
   }
-
-  // ---- Presentation ---------------------------------------------------------
-  function presentSequence(){
-    show("wmq-present");
-    $("wmq-present-label").textContent = blockName()+" · length "+S.len;
-    var el=$("wmq-digit");
-    el.classList.toggle("wmq-iconmode", isImg());
-    el.textContent="";
-    var i=0;
-    setTimeout(function step(){
-      if(i>=S.seq.length){ setTimeout(beginRecall, CFG.blankMs); return; }
-      el.style.opacity="1";
-      el.textContent=glyph(S.seq[i]);
-      setTimeout(function(){
-        el.style.opacity="0";
-        el.textContent="";
-        i++;
-        setTimeout(step, CFG.blankMs);
-      }, CFG.showMs);
-    }, CFG.preCountMs);
+  function makeSpatialSeq(n){
+    var a=[],prev=-1;
+    for(var i=0;i<n;i++){var c=Math.floor(Math.random()*GRID),g=0;
+      while(c===prev&&g<8){c=Math.floor(Math.random()*GRID);g++;} a.push(c);prev=c;}
+    return a;
+  }
+  // n-back stream with a controlled number of 2-back targets
+  function makeNbackStream(len,targets,n){
+    var seq=[],i,r;
+    for(i=0;i<len;i++){ r=Math.floor(Math.random()*NB_ICONS.length);
+      if(i>=n && r===seq[i-n]) r=(r+1)%NB_ICONS.length;  // start as non-target
+      seq.push(r);
+    }
+    // choose target positions among i>=n, non-adjacent
+    var pos=[]; for(i=n;i<len;i++) pos.push(i);
+    for(i=pos.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=pos[i];pos[i]=pos[j];pos[j]=t;}
+    var chosen=[],k;
+    for(k=0;k<pos.length && chosen.length<targets;k++){
+      var p=pos[k];
+      if(chosen.indexOf(p-1)===-1 && chosen.indexOf(p+1)===-1){ chosen.push(p); seq[p]=seq[p-n]; }
+    }
+    return seq;
   }
 
-  // ---- Recall ---------------------------------------------------------------
-  function beginRecall(){
+  // ---- Grid build -----------------------------------------------------------
+  function buildGrid(el,interactive){
+    el.innerHTML="";
+    for(var i=0;i<GRID;i++){
+      (function(idx){
+        var c=document.createElement("div");
+        c.className="wmq-cell"; c.setAttribute("data-i",idx);
+        if(interactive) c.addEventListener("click",function(){ onCellTap(idx,c); });
+        el.appendChild(c);
+      })(i);
+    }
+  }
+
+  // ---- Round intro ----------------------------------------------------------
+  function showRoundIntro(){
+    setProgress();
+    show("wmq-blockintro");
+    var r=round();
+    $("wmq-round-tag").textContent="Round "+(S.ri+1)+" of "+ROUNDS.length;
+    $("wmq-block-go").textContent="Try a quick practice";
+    if(r.type==="digit"){
+      $("wmq-block-title").textContent=r.name;
+      $("wmq-block-desc").textContent = r.dir==="fwd"
+        ? "Numbers will flash one at a time, then disappear."
+        : "Numbers will flash one at a time. This time you give them back in reverse.";
+      $("wmq-block-how").innerHTML="<ol>"+
+        "<li>Watch the numbers appear one by one.</li>"+
+        (r.dir==="fwd"
+          ? "<li>When the keypad shows, tap them in the <strong>same order</strong>.</li>"
+          : "<li>When the keypad shows, tap them in <strong>reverse order</strong> (last one first).</li>")+
+        "<li>They get longer each time. Just do your best.</li></ol>";
+    } else if(r.type==="spatial"){
+      $("wmq-block-title").textContent=r.name;
+      $("wmq-block-desc").textContent="Squares in a grid will light up one at a time. Remember the path.";
+      $("wmq-block-how").innerHTML="<ol>"+
+        "<li>Watch which squares light up, and in what order.</li>"+
+        "<li>Then tap the squares in the <strong>same order</strong>.</li>"+
+        "<li>The path gets longer each time.</li></ol>";
+    } else {
+      $("wmq-block-title").textContent="Updating (2-back)";
+      $("wmq-block-desc").textContent="Pictures appear one at a time in a steady stream. Your job is to spot repeats.";
+      $("wmq-block-how").innerHTML="<ol>"+
+        "<li>Tap <strong>MATCH</strong> whenever the picture is the same as the one <strong>2 steps back</strong>.</li>"+
+        "<li>If it is not a match, do nothing and wait for the next one.</li>"+
+        "<li>Keep up. The stream does not pause.</li></ol>";
+    }
+  }
+
+  // ---- Practice + scored kickoff -------------------------------------------
+  function beginPractice(){
+    S.practice=true; var r=round();
+    if(r.type==="nback"){ startNback(true); }
+    else { S.len=r.startLen; runSpanTrial(); }
+  }
+  function showReady(){
+    show("wmq-ready"); setProgress();
+    $("wmq-ready-text").textContent = round().type==="nback"
+      ? "Now the real stream begins. Stay sharp."
+      : "Now the real round begins. It gets longer until it becomes too hard.";
+  }
+  function beginScored(){
+    S.practice=false; var r=round();
+    S.results[r.key]={ points:0, span:0, trials:0, perfect:0 };
+    if(r.type==="nback"){ startNback(false); }
+    else { S.len=r.startLen; S.trialInLen=0; S.perfectInLen=0; runSpanTrial(); }
+  }
+
+  // ---- Span trial (digit + spatial) ----------------------------------------
+  function runSpanTrial(){
+    var r=round();
     S.entry=[];
-    show("wmq-recall");
-    $("wmq-recall-label").textContent = blockName()+" · length "+S.len;
-    $("wmq-recall-instr").textContent =
-      S.block==="bwd" ? "Tap the numbers in REVERSE order." :
-      S.block==="img" ? "Tap the pictures in the SAME order you saw them." :
-                        "Tap the numbers in the SAME order you saw them.";
-    buildPalette();
-    renderEntry();
-    $("wmq-submit").disabled = true;
+    S.seq = r.type==="spatial" ? makeSpatialSeq(S.len) : makeDigitSeq(S.len);
+    presentSpan();
+  }
+  function presentSpan(){
+    var r=round();
+    show("wmq-present");
+    $("wmq-present-label").textContent=(S.practice?"Practice · ":"")+r.name+" · length "+S.len;
+    $("wmq-watch").textContent="Watch carefully…";
+    var isGrid=(r.type==="spatial");
+    $("wmq-digit").hidden=isGrid; $("wmq-grid-show").hidden=!isGrid;
+    if(isGrid){
+      buildGrid($("wmq-grid-show"),false);
+      flashGrid(0);
+    } else {
+      $("wmq-digit").classList.remove("wmq-iconmode");
+      $("wmq-digit").textContent="";
+      flashDigit(0);
+    }
+  }
+  function flashDigit(i){
+    var el=$("wmq-digit");
+    setTimeout(function step(){
+      if(i>=S.seq.length){ setTimeout(beginRecall,CFG.blankMs); return; }
+      el.style.opacity="1"; el.textContent=String(S.seq[i]);
+      setTimeout(function(){ el.style.opacity="0"; el.textContent=""; i++; setTimeout(step,CFG.blankMs); },CFG.showMs);
+    }, i===0?CFG.preCountMs:0);
+  }
+  function flashGrid(i){
+    var cells=$("wmq-grid-show").children;
+    setTimeout(function step(){
+      if(i>=S.seq.length){ setTimeout(beginRecall,CFG.blankMs); return; }
+      var c=cells[S.seq[i]]; c.classList.add("lit");
+      setTimeout(function(){ c.classList.remove("lit"); i++; setTimeout(step,CFG.blankMs); },CFG.showMs);
+    }, i===0?CFG.preCountMs:0);
   }
 
+  function beginRecall(){
+    var r=round(); S.entry=[]; S.recallStart=now();
+    if(r.type==="spatial"){
+      show("wmq-recall-grid");
+      $("wmq-recallg-label").textContent=(S.practice?"Practice · ":"")+r.name+" · length "+S.len;
+      buildGrid($("wmq-grid-resp"),true);
+      $("wmq-gsubmit").disabled=true;
+    } else {
+      show("wmq-recall");
+      $("wmq-recall-label").textContent=(S.practice?"Practice · ":"")+r.name+" · length "+S.len;
+      $("wmq-recall-instr").textContent = r.dir==="fwd"
+        ? "Tap the numbers in the SAME order you saw them."
+        : "Tap the numbers in REVERSE order.";
+      buildKeypad(); renderEntry(); $("wmq-submit").disabled=true;
+    }
+  }
+
+  // digit recall input
+  function buildKeypad(){
+    var pad=$("wmq-keypad"); pad.innerHTML="";
+    [1,2,3,4,5,6,7,8,9,0].forEach(function(nn){
+      var b=document.createElement("button");
+      b.type="button"; b.className="wmq-key"+(nn===0?" wmq-key-zero":""); b.textContent=String(nn);
+      b.addEventListener("click",function(){ if(S.entry.length<S.len){ S.entry.push(nn); renderEntry(); } });
+      pad.appendChild(b);
+    });
+  }
   function renderEntry(){
     var wrap=$("wmq-entry"); wrap.innerHTML="";
     for(var i=0;i<S.len;i++){
       var slot=document.createElement("div");
       var filled=i<S.entry.length;
       slot.className="wmq-slot"+(filled?" wmq-filled":"");
-      slot.textContent = filled ? glyph(S.entry[i]) : "";
+      slot.textContent=filled?String(S.entry[i]):"";
       wrap.appendChild(slot);
     }
-    $("wmq-submit").disabled = (S.entry.length!==S.len);
+    $("wmq-submit").disabled=(S.entry.length!==S.len);
+  }
+  // spatial recall input
+  function onCellTap(idx,cell){
+    if(S.entry.length>=S.len) return;
+    if(cell.classList.contains("picked")) return;
+    S.entry.push(idx); cell.classList.add("picked");
+    cell.textContent=String(S.entry.length);
+    $("wmq-gsubmit").disabled=(S.entry.length!==S.len);
+  }
+  function clearGrid(){
+    S.entry=[]; var cells=$("wmq-grid-resp").children;
+    for(var i=0;i<cells.length;i++){ cells[i].classList.remove("picked"); cells[i].textContent=""; }
+    $("wmq-gsubmit").disabled=true;
   }
 
-  function addEntry(val){ if(S.entry.length>=S.len) return; S.entry.push(val); renderEntry(); }
-
-  function buildPalette(){
-    var pad=$("wmq-keypad"); pad.innerHTML="";
-    if(isImg()){
-      ICONS.forEach(function(icon, idx){
-        var b=document.createElement("button");
-        b.type="button"; b.className="wmq-key wmq-key-icon";
-        b.textContent=icon;
-        b.addEventListener("click", function(){ addEntry(idx); });
-        pad.appendChild(b);
-      });
-    } else {
-      [1,2,3,4,5,6,7,8,9,0].forEach(function(n){
-        var b=document.createElement("button");
-        b.type="button"; b.className="wmq-key"+(n===0?" wmq-key-zero":"");
-        b.textContent=String(n);
-        b.addEventListener("click", function(){ addEntry(n); });
-        pad.appendChild(b);
-      });
+  // score one span trial
+  function submitSpan(){
+    var r=round();
+    var btn = r.type==="spatial" ? $("wmq-gsubmit") : $("wmq-submit");
+    if(btn.disabled) return;
+    var rt=now()-S.recallStart;
+    var target = r.dir==="bwd" ? S.seq.slice().reverse() : S.seq.slice();
+    var correctPos=0;
+    for(var i=0;i<target.length;i++){ if(S.entry[i]===target[i]) correctPos++; }
+    var perfect=(correctPos===target.length);
+    if(!S.practice){
+      var res=S.results[r.key];
+      res.points+=correctPos; res.trials++; if(perfect){ res.perfect++; res.span=Math.max(res.span,S.len); }
+      S.rt.push(rt);
+      if(perfect) S.perfectInLen++;
+      S.trialInLen++;
     }
+    flashSpanFeedback(perfect,correctPos,target.length);
   }
-
-  // ---- Scoring flow ---------------------------------------------------------
-  function submitTrial(){
-    if($("wmq-submit").disabled) return;
-    var target = (S.block==="bwd") ? S.seq.slice().reverse() : S.seq.slice();
-    var ok = S.entry.length===target.length && S.entry.every(function(v,i){ return v===target[i]; });
-    if(ok) S.correctInLen++;
-    S.trialInLen++;
-    flashFeedback(ok);
-  }
-
-  function flashFeedback(ok){
+  function flashSpanFeedback(perfect,correctPos,total){
     show("wmq-feedback");
-    $("wmq-fb-icon").textContent = ok ? "✓" : "✕";
-    $("wmq-fb-icon").style.color = ok ? "var(--wmq-green)" : "var(--wmq-warn)";
-    $("wmq-fb-text").textContent = ok ? "Correct" : "Not quite";
-    setTimeout(afterTrial, CFG.feedbackMs);
+    $("wmq-fb-icon").textContent=perfect?"✓":"✕";
+    $("wmq-fb-icon").style.color=perfect?"var(--wmq-green)":"var(--wmq-warn)";
+    $("wmq-fb-text").textContent=perfect?"Correct":"Not quite";
+    $("wmq-fb-sub").textContent = S.practice
+      ? (perfect?"You have got it. Ready for the real round.":"No problem, that was just practice. Ready for the real round.")
+      : (perfect?"":(correctPos>0?(correctPos+" of "+total+" in the right spot."):""));
+    setTimeout(afterSpan,CFG.feedbackMs+(S.practice?300:0));
   }
-
-  function recordSpan(){
-    if(S.block==="fwd") S.fwdSpan=S.len;
-    else if(S.block==="bwd") S.bwdSpan=S.len;
-    else S.imgSpan=S.len;
-  }
-
-  function afterTrial(){
-    if(S.trialInLen < CFG.trialsPerLen){
-      S.seq=makeSeq(S.len); presentSequence(); return;   // next trial, same length
+  function afterSpan(){
+    var r=round();
+    if(S.practice){ showReady(); return; }
+    if(S.trialInLen<2){ runSpanTrial(); return; }            // 2 trials per length
+    if(S.perfectInLen>=1 && S.len<r.maxLen){                 // passed -> go longer
+      S.len++; S.trialInLen=0; S.perfectInLen=0; runSpanTrial(); return;
     }
-    if(S.correctInLen >= CFG.advanceOn){
-      recordSpan();
-      if(S.len>=maxLen()){ endBlock(); return; }
-      S.len++; S.trialInLen=0; S.correctInLen=0;
-      S.seq=makeSeq(S.len); presentSequence();
-    } else {
-      endBlock();
+    nextRound();                                             // both failed (or max) -> done
+  }
+
+  // ---- N-back ---------------------------------------------------------------
+  function startNback(isPractice){
+    var r=round();
+    S.practice=isPractice;
+    var len = isPractice?7:r.streamLen;
+    var tgt = isPractice?2:r.targets;
+    S.nb={ stream:makeNbackStream(len,tgt,r.n), i:-1, responded:false,
+           hits:0,fa:0,miss:0,cr:0,targets:0,nontargets:0, rts:[], len:len };
+    show("wmq-nback");
+    $("wmq-nback-label").textContent=(isPractice?"Practice · ":"")+"Updating (2-back)";
+    $("wmq-nback-feed").innerHTML="&nbsp;";
+    $("wmq-nback-item").textContent="";
+    $("wmq-nback-match").disabled=true;
+    setTimeout(nbackNext,700);
+  }
+  function nbackNext(){
+    var r=round();
+    S.nb.i++; var nb=S.nb;
+    if(nb.i>=nb.stream.length){ endNback(); return; }
+    nb.responded=false; nb.shownAt=now();
+    $("wmq-nback-item").textContent=NB_ICONS[nb.stream[nb.i]];
+    $("wmq-nback-match").disabled = (nb.i<r.n);  // can't match before n items seen
+    if(S.practice) $("wmq-nback-feed").innerHTML="&nbsp;";
+    setTimeout(function(){ nbackResolve(); }, r.itemMs);
+  }
+  function nbackResolve(){
+    var r=round(); var nb=S.nb;
+    if(nb.i>=r.n){
+      var isTarget=(nb.stream[nb.i]===nb.stream[nb.i-r.n]);
+      if(isTarget) nb.targets++; else nb.nontargets++;
+      if(isTarget && nb.responded){ nb.hits++; }
+      else if(isTarget && !nb.responded){ nb.miss++; }
+      else if(!isTarget && nb.responded){ nb.fa++; }
+      else { nb.cr++; }
+      if(S.practice){
+        var ok=(isTarget===nb.responded);
+        $("wmq-nback-feed").style.color = ok?"var(--wmq-green)":"var(--wmq-warn)";
+        $("wmq-nback-feed").textContent = isTarget ? (nb.responded?"Yes, that was a match":"That was a match (2 back)")
+                                                   : (nb.responded?"Not a match":"Right, not a match");
+      }
     }
+    $("wmq-nback-item").style.opacity="0";
+    setTimeout(function(){ $("wmq-nback-item").style.opacity="1"; nbackNext(); }, r.isiMs);
+  }
+  function nbackRespond(){
+    var nb=S.nb, r=round();
+    if(!nb || nb.responded || nb.i<r.n) return;
+    nb.responded=true;
+    nb.rts.push(now()-nb.shownAt);
+    $("wmq-nback-match").disabled=true;
+  }
+  function endNback(){
+    var nb=S.nb;
+    if(S.practice){ showReady(); return; }
+    var hitRate = nb.targets? nb.hits/nb.targets : 0;
+    var crRate  = nb.nontargets? nb.cr/nb.nontargets : 0;
+    var bal = (hitRate+crRate)/2;        // balanced accuracy 0..1
+    var medRt = median(nb.rts);
+    S.results[round().key]={ balAcc:Math.round(bal*100), hits:nb.hits, fa:nb.fa,
+                             targets:nb.targets, hitRt:medRt };
+    if(!isNaN(medRt)) S.rt.push(medRt);
+    nextRound();
   }
 
-  function startBlock(block){
-    S.block=block; S.len=CFG.startLen; S.trialInLen=0; S.correctInLen=0;
-    showBlockIntro(block);
-  }
-
-  function endBlock(){
-    if(S.block==="fwd") startBlock("bwd");
-    else if(S.block==="bwd") startBlock("img");
+  // ---- Round flow -----------------------------------------------------------
+  function nextRound(){
+    if(S.ri<ROUNDS.length-1){ S.ri++; showRoundIntro(); }
     else showResults();
   }
 
-  // ---- Block intros ---------------------------------------------------------
-  function showBlockIntro(block){
-    show("wmq-blockintro");
-    if(block==="fwd"){
-      $("wmq-block-title").textContent="Round 1: Numbers forward";
-      $("wmq-block-desc").textContent="Numbers appear one at a time, then vanish. Tap them back in the SAME order.";
-      $("wmq-block-demo").textContent="4  →  4";
-      $("wmq-block-go").textContent="Begin Round 1";
-    } else if(block==="bwd"){
-      $("wmq-block-title").textContent="Round 2: Numbers backward";
-      $("wmq-block-desc").textContent="Same idea, but now tap the numbers back in REVERSE order. This is the harder, more revealing round.";
-      $("wmq-block-demo").textContent="3 8 1  →  1 8 3";
-      $("wmq-block-go").textContent="Begin Round 2";
+  // ---- Scoring -> sub-scores ------------------------------------------------
+  function subScore(r){
+    var res=S.results[r.key]||{};
+    if(r.type==="nback"){
+      var bal=(res.balAcc||0);
+      return clamp(Math.round(50*(bal-50)/28),0,100);    // chance 50% -> 0, ~78% -> 50
+    }
+    var pts=res.points||0;
+    return clamp(Math.round(50*pts/r.typPoints),0,100);  // typPoints -> 50
+  }
+  function levelFor(s){
+    if(s>=70) return "Well above average";
+    if(s>=58) return "Above average";
+    if(s>=42) return "Average";
+    if(s>=30) return "Below average";
+    return "Well below average";
+  }
+  function overallBand(idx){
+    if(idx>=72) return {b:"Exceptional", pct:"roughly the top 10%"};
+    if(idx>=60) return {b:"Strong", pct:"above average, around the top third"};
+    if(idx>=42) return {b:"Typical", pct:"right around the middle"};
+    if(idx>=30) return {b:"Below typical", pct:"a bit under the middle"};
+    return {b:"Notably low today", pct:"below the typical range in this snapshot"};
+  }
+  function median(a){ if(!a||!a.length) return NaN; var b=a.slice().sort(function(x,y){return x-y;}); var m=Math.floor(b.length/2); return b.length%2?b[m]:(b[m-1]+b[m])/2; }
+
+  // ---- Results / profile ----------------------------------------------------
+  function showResults(){
+    show("wmq-results");
+    var subs=ROUNDS.map(function(r){ return {r:r, s:subScore(r)}; });
+    var idx=Math.round(subs.reduce(function(a,x){return a+x.s;},0)/subs.length);
+    var band=overallBand(idx);
+    $("wmq-overall-num").textContent=idx;
+    $("wmq-overall-band").textContent=band.b;
+
+    // bars
+    var bars=$("wmq-bars"); bars.innerHTML="";
+    subs.forEach(function(x){
+      var span = (x.r.type==="nback") ? ((S.results[x.r.key]||{}).balAcc+"% on the 2-back")
+                                      : ("span "+((S.results[x.r.key]||{}).span||0));
+      var row=document.createElement("div"); row.className="wmq-barrow";
+      row.innerHTML='<div class="wmq-barhead"><span class="nm">'+x.r.domain+'</span><span class="lv">'+levelFor(x.s)+'</span></div>'+
+        '<div class="wmq-bartrack"><div class="wmq-barfill" style="width:'+x.s+'%"></div></div>'+
+        '<div class="wmq-barsub">'+x.r.name+' · '+span+'</div>';
+      bars.appendChild(row);
+    });
+
+    // profile narrative
+    var byScore=subs.slice().sort(function(a,b){return b.s-a.s;});
+    var top=byScore[0], low=byScore[byScore.length-1];
+    var fwd=subs[0].s, bwd=subs[1].s, spa=subs[2].s;
+    var parts=[];
+    if(top.s-low.s>=14){
+      parts.push("Your standout strength is "+meaning(top.r.key)+" Your most stretched area is "+meaning(low.r.key));
     } else {
-      $("wmq-block-title").textContent="Round 3: Pictures";
-      $("wmq-block-desc").textContent="Now a sequence of pictures appears one at a time. Tap them back in the SAME order. This checks your visual memory, a separate system from numbers.";
-      $("wmq-block-demo").textContent="⭐ 🔑  →  ⭐ 🔑";
-      $("wmq-block-go").textContent="Begin Round 3";
+      parts.push("Your profile is fairly even across the four areas, with no single area far ahead or behind.");
+    }
+    var verbal=Math.round((fwd+bwd)/2);
+    if(Math.abs(verbal-spa)>=14){
+      parts.push(verbal>spa
+        ? "You lean verbal: you hold words and numbers better than visual layouts."
+        : "You lean visual: you hold positions and patterns better than words and numbers.");
+    }
+    if(Math.abs(fwd-bwd)>=14){
+      parts.push(fwd>bwd
+        ? "You hold information well, but reworking it in your head (backward) is harder, which is the most trainable piece."
+        : "You are strong at manipulating information in your head, not just holding it.");
+    }
+    $("wmq-profile").textContent=parts.join(" ");
+
+    // speed read
+    var med=median(S.rt);
+    var speed = isNaN(med)? "" :
+      (med<2600 ? "Pace: you answered quickly and decisively."
+                : med<4200 ? "Pace: you worked at a steady, deliberate pace."
+                           : "Pace: you took your time, favoring care over speed.");
+    $("wmq-speed").textContent=speed;
+
+    $("wmq-cta").innerHTML='<p class="wmq-next">Add your email on the next step to get your full profile, plus a few practical ways to strengthen your weakest area.</p>';
+    emitResult(idx,band.b,subs);
+  }
+  function meaning(key){
+    switch(key){
+      case "fwd": return "verbal storage, holding spoken information like numbers and instructions.";
+      case "bwd": return "verbal manipulation, reordering and working with information in your head.";
+      case "spa": return "visual memory, holding positions, layouts, and where things are.";
+      default:    return "live updating, tracking a situation as it changes in real time.";
     }
   }
 
-  // ---- Results --------------------------------------------------------------
-  function bandFor(idx){
-    // idx = forward + backward + picture span. Typical adult ~ 7 + 5 + 5 = 17.
-    if(idx>=22) return {label:"Exceptional", note:"Your span is well above the typical adult range across both numbers and pictures. You can hold and work with an unusually large amount of information at once."};
-    if(idx>=18) return {label:"Strong", note:"Above the typical adult range. You comfortably juggle several pieces of information in the moment, by ear and by eye."};
-    if(idx>=14) return {label:"Typical", note:"Right in the typical adult range. Most people land here, with solid everyday working memory."};
-    if(idx>=11) return {label:"Below typical", note:"A bit under the typical range today. This is common when tired, stressed, or distracted, and it is also very trainable."};
-    return {label:"Notably low today", note:"Lower than the typical range in this snapshot. A single session is not conclusive, but if this matches your day-to-day experience, targeted strategies and coaching can make a real difference."};
-  }
-
-  function showResults(){
-    show("wmq-results");
-    $("wmq-fwd-num").textContent=S.fwdSpan;
-    $("wmq-bwd-num").textContent=S.bwdSpan;
-    $("wmq-img-num").textContent=S.imgSpan;
-    var idx=S.fwdSpan+S.bwdSpan+S.imgSpan;
-    $("wmq-idx-num").textContent=idx;
-    var b=bandFor(idx);
-    $("wmq-band").textContent=b.label;
-    $("wmq-interp").textContent=b.note;
-    // Booking CTA lives on the Outgrow Result screen (after the lead form), not here,
-    // so we don't divert people past the email capture. Just prompt them to continue.
-    $("wmq-cta").innerHTML='<p class="wmq-next">Add your email on the next step to get these results, plus a few practical ways to strengthen your working memory.</p>';
-    emitResult(idx, b.label);
-  }
-
-  // ---- Result emit (for Outgrow/GHL wiring later) ---------------------------
-  function emitResult(idx, band){
-    var payload={ forwardSpan:S.fwdSpan, backwardSpan:S.bwdSpan, pictureSpan:S.imgSpan, wmIndex:idx, band:band };
+  function emitResult(idx,band,subs){
+    var payload={ index:idx, band:band };
+    subs.forEach(function(x){ payload[x.r.key]={ sub:x.s, level:levelFor(x.s), raw:S.results[x.r.key]||{} }; });
     try{ window.KAIZEN_WMQ_RESULT=payload; }catch(e){}
-    try{ if(window.parent && window.parent!==window) window.parent.postMessage({type:"KAIZEN_WMQ_RESULT",payload:payload},"*"); }catch(e){}
+    try{ if(window.parent&&window.parent!==window) window.parent.postMessage({type:"KAIZEN_WMQ_RESULT",payload:payload},"*"); }catch(e){}
     try{ var hi=document.querySelector('input[name="wmq_result"]'); if(hi) hi.value=JSON.stringify(payload); }catch(e){}
   }
 
   // ---- Wiring ---------------------------------------------------------------
-  function startTest(){
-    S.fwdSpan=0; S.bwdSpan=0; S.imgSpan=0;
-    startBlock("fwd");
-  }
-  function beginBlockRun(){
-    S.trialInLen=0; S.correctInLen=0;
-    S.seq=makeSeq(S.len); presentSequence();
-  }
-
+  function startTest(){ resetAll(); showRoundIntro(); }
   function init(){
+    resetAll();
     $("wmq-start").addEventListener("click", startTest);
-    $("wmq-block-go").addEventListener("click", beginBlockRun);
+    $("wmq-block-go").addEventListener("click", beginPractice);
+    $("wmq-ready-go").addEventListener("click", beginScored);
+    $("wmq-submit").addEventListener("click", submitSpan);
+    $("wmq-gsubmit").addEventListener("click", submitSpan);
     $("wmq-clear").addEventListener("click", function(){ S.entry=[]; renderEntry(); });
-    $("wmq-submit").addEventListener("click", submitTrial);
-    $("wmq-retake").addEventListener("click", function(){ startTest(); });
-    // Physical keyboard support (desktop) for the number rounds only.
+    $("wmq-gclear").addEventListener("click", clearGrid);
+    $("wmq-nback-match").addEventListener("click", nbackRespond);
+    $("wmq-retake").addEventListener("click", startTest);
     document.addEventListener("keydown", function(e){
-      if($("wmq-recall").hidden) return;
-      if(!isImg() && e.key>="0" && e.key<="9"){ addEntry(Number(e.key)); }
-      else if(e.key==="Backspace"){ S.entry.pop(); renderEntry(); }
-      else if(e.key==="Enter"){ submitTrial(); }
+      if(!$("wmq-recall").hidden){
+        if(e.key>="0"&&e.key<="9"){ if(S.entry.length<S.len){ S.entry.push(Number(e.key)); renderEntry(); } }
+        else if(e.key==="Backspace"){ S.entry.pop(); renderEntry(); }
+        else if(e.key==="Enter"){ submitSpan(); }
+      } else if(!$("wmq-nback").hidden && (e.key===" "||e.key==="Enter")){ e.preventDefault(); nbackRespond(); }
     });
-    show("wmq-intro"); // only runs if JS executes; doubles as a smoke test
+    show("wmq-intro");
   }
-
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init);
   else init();
 })();
