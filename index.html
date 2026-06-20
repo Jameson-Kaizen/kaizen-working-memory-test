@@ -160,6 +160,7 @@
     background:var(--wmq-soft);color:var(--wmq-green-d);margin-bottom:12px;}
   .wmq-interp{font-size:15px;color:var(--wmq-ink);margin:0 auto 18px;max-width:440px;}
   .wmq-cta{margin:0 0 16px;}
+  .wmq-next{font-size:15px;color:var(--wmq-ink);background:var(--wmq-soft);border-radius:12px;padding:12px 16px;margin:0 auto;max-width:440px;}
   @media (max-width:480px){
     .wmq-card{padding:22px 16px;}
     .wmq-digit{font-size:78px;}
@@ -183,7 +184,9 @@
     blankMs: 280,          // gap between digits
     preCountMs: 700,       // "get ready" before first digit
     feedbackMs: 1100,
-    // Adult discovery-call booking link.
+    // Adult discovery-call booking link. NOTE: the booking CTA now lives on the Outgrow
+    // Result screen (after the lead form), so this is currently unused by the widget —
+    // kept for reference / in case the in-test CTA is ever restored.
     bookingUrl: "https://api.leadconnectorhq.com/widget/booking/ZFEujWUugeTS8QEdA4qB"
   };
 
@@ -353,7 +356,9 @@
     var b=bandFor(idx);
     $("wmq-band").textContent=b.label;
     $("wmq-interp").textContent=b.note;
-    $("wmq-cta").innerHTML='<a class="wmq-btn wmq-btn-primary" href="'+CFG.bookingUrl+'" target="_blank" rel="noopener">Talk to a Kaizen coach about strengthening this</a>';
+    // Booking CTA lives on the Outgrow Result screen (after the lead form), not here —
+    // so we don't divert people past the email capture. Just prompt them to continue.
+    $("wmq-cta").innerHTML='<p class="wmq-next">Add your email on the next step to get these results, plus a few practical ways to strengthen your working memory.</p>';
     emitResult(idx, b.label);
   }
 
