@@ -1,12 +1,13 @@
 <!--
-  Kaizen Working Memory Test — Adaptive Digit Span (Forward + Backward)
+  Kaizen Working Memory Test - Adaptive Span (Forward digits, Backward digits, Picture span)
   Self-contained widget for Outgrow Custom HTML, or standalone / iframe embed.
 
   WHY this is a REAL working-memory test (not self-report):
-    - A sequence of digits is shown one at a time, then REMOVED from the screen.
-    - The participant must reproduce it from memory (forward) and in reverse (backward).
-    - Backward span requires mental manipulation -> the defining feature of working memory.
-    - Span is scored adaptively (clinical-style: 2 trials/length, advance on >=1 correct,
+    - A sequence (numbers, then pictures) is shown one at a time, then REMOVED from the screen.
+    - The participant reproduces it from memory: forward order, reverse order, and a picture sequence.
+    - Backward span requires mental manipulation (the defining feature of working memory); the
+      picture round taxes the separate visual/visuospatial system.
+    - Span is scored adaptively (clinical-style: 2 trials per length, advance on >=1 correct,
       stop when both trials at a length fail). Score = longest length passed.
 
   COMPLIANCE: framed as an informal screening estimate, NOT a clinical/diagnostic assessment.
@@ -24,16 +25,17 @@
   <section id="wmq-intro" class="wmq-card" hidden>
     <div class="wmq-badge" id="wmq-heartbeat">● live</div>
     <h2 class="wmq-h2">Working Memory Test</h2>
-    <p class="wmq-lead">This is a real test of your working memory — the mental "scratchpad" you use to hold and work with information for a few seconds.</p>
+    <p class="wmq-lead">This is a real test of your working memory, the mental "scratchpad" you use to hold and work with information for a few seconds.</p>
     <ul class="wmq-list">
-      <li>You'll see a sequence of numbers, one at a time. Then they disappear.</li>
-      <li><strong>Round 1 (Forward):</strong> tap the numbers back in the <em>same</em> order.</li>
-      <li><strong>Round 2 (Backward):</strong> tap them back in <em>reverse</em> order.</li>
-      <li>The sequences get longer until they become too hard. Takes about 3 minutes.</li>
+      <li>You'll see a short sequence, one item at a time, then it disappears.</li>
+      <li><strong>Round 1 (Numbers forward):</strong> tap the numbers back in the <em>same</em> order.</li>
+      <li><strong>Round 2 (Numbers backward):</strong> tap them back in <em>reverse</em> order.</li>
+      <li><strong>Round 3 (Pictures):</strong> tap a sequence of pictures back in the <em>same</em> order.</li>
+      <li>Each sequence gets longer until it becomes too hard. Takes about 5 minutes.</li>
     </ul>
     <p class="wmq-tip">For an accurate read: don't write anything down, and find a quiet moment without distractions.</p>
     <button class="wmq-btn wmq-btn-primary" id="wmq-start">Start the test</button>
-    <p class="wmq-fine">An informal estimate for your own insight — not a clinical or diagnostic assessment.</p>
+    <p class="wmq-fine">An informal estimate for your own insight, not a clinical or diagnostic assessment.</p>
   </section>
 
   <!-- BLOCK INTRO -->
@@ -77,11 +79,15 @@
     <div class="wmq-scorewrap">
       <div class="wmq-score">
         <div class="wmq-score-num" id="wmq-fwd-num">–</div>
-        <div class="wmq-score-lbl">Forward span</div>
+        <div class="wmq-score-lbl">Numbers forward</div>
       </div>
       <div class="wmq-score">
         <div class="wmq-score-num" id="wmq-bwd-num">–</div>
-        <div class="wmq-score-lbl">Backward span</div>
+        <div class="wmq-score-lbl">Numbers backward</div>
+      </div>
+      <div class="wmq-score">
+        <div class="wmq-score-num" id="wmq-img-num">–</div>
+        <div class="wmq-score-lbl">Picture span</div>
       </div>
       <div class="wmq-score wmq-score-main">
         <div class="wmq-score-num" id="wmq-idx-num">–</div>
@@ -92,7 +98,7 @@
     <p class="wmq-interp" id="wmq-interp"></p>
     <div class="wmq-cta" id="wmq-cta"></div>
     <button class="wmq-btn wmq-btn-ghost" id="wmq-retake">Take it again</button>
-    <p class="wmq-fine">Screening estimate only. Span varies with sleep, stress, caffeine, and focus — one session is a snapshot, not a diagnosis.</p>
+    <p class="wmq-fine">Screening estimate only. Span varies with sleep, stress, caffeine, and focus. One session is a snapshot, not a diagnosis.</p>
   </section>
 </div>
 
@@ -132,11 +138,12 @@
   .wmq-stage{display:flex;align-items:center;justify-content:center;min-height:150px;}
   .wmq-digit{font-size:96px;font-weight:700;color:var(--wmq-green-d);line-height:1;
     transition:opacity .08s ease;font-variant-numeric:tabular-nums;}
-  .wmq-demo{font-size:30px;letter-spacing:10px;color:var(--wmq-green-d);font-weight:700;margin:6px 0 20px;}
+  .wmq-digit.wmq-iconmode{font-size:82px;}
+  .wmq-demo{font-size:30px;letter-spacing:8px;color:var(--wmq-green-d);font-weight:700;margin:6px 0 20px;}
   /* recall */
   .wmq-recall-instr{font-size:17px;font-weight:600;margin:6px 0 14px;}
   .wmq-entry{min-height:56px;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
-  .wmq-slot{width:42px;height:54px;border:2px solid var(--wmq-line);border-radius:10px;display:flex;
+  .wmq-slot{width:46px;height:54px;border:2px solid var(--wmq-line);border-radius:10px;display:flex;
     align-items:center;justify-content:center;font-size:26px;font-weight:700;color:var(--wmq-ink);background:#fafdfb;}
   .wmq-slot.wmq-filled{border-color:var(--wmq-green);background:var(--wmq-soft);}
   .wmq-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:300px;margin:0 auto 18px;}
@@ -144,6 +151,7 @@
     font-weight:700;color:var(--wmq-ink);padding:16px 0;cursor:pointer;font-family:inherit;transition:background .1s;}
   .wmq-key:hover{background:#e2efe7;}
   .wmq-key:active{background:#d2e7da;}
+  .wmq-key-icon{font-size:30px;padding:12px 0;}
   .wmq-key-zero{grid-column:2;}
   .wmq-actions{display:flex;gap:12px;justify-content:center;}
   /* feedback */
@@ -152,9 +160,9 @@
   .wmq-fb-text{font-size:18px;font-weight:600;margin:0;}
   /* results */
   .wmq-scorewrap{display:flex;gap:12px;justify-content:center;margin:20px 0;flex-wrap:wrap;}
-  .wmq-score{background:var(--wmq-soft);border-radius:14px;padding:16px 18px;min-width:110px;}
+  .wmq-score{background:var(--wmq-soft);border-radius:14px;padding:14px 16px;min-width:104px;}
   .wmq-score-main{background:var(--wmq-green);color:#fff;}
-  .wmq-score-num{font-size:40px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;}
+  .wmq-score-num{font-size:38px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;}
   .wmq-score-lbl{font-size:13px;margin-top:6px;opacity:.85;}
   .wmq-band{display:inline-block;font-size:15px;font-weight:700;padding:6px 16px;border-radius:999px;
     background:var(--wmq-soft);color:var(--wmq-green-d);margin-bottom:12px;}
@@ -164,6 +172,7 @@
   @media (max-width:480px){
     .wmq-card{padding:22px 16px;}
     .wmq-digit{font-size:78px;}
+    .wmq-digit.wmq-iconmode{font-size:70px;}
     .wmq-h2{font-size:21px;}
   }
 </style>
@@ -173,26 +182,30 @@
   "use strict";
   var $ = function(id){ return document.getElementById(id); };
 
+  // Picture set for Round 3 (visual span). 9 distinct, easily told-apart symbols -> 3x3 palette.
+  var ICONS = ["🍎","🚗","⭐","🐶","🌙","🔑","🎈","🌳","🔔"];
+
   // ---- Config ---------------------------------------------------------------
   var CFG = {
     startLen: 3,
     maxLenFwd: 9,
     maxLenBwd: 8,
+    maxLenImg: 7,
     trialsPerLen: 2,
     advanceOn: 1,          // advance to next length if >= this many correct of trialsPerLen
-    showMs: 900,           // each digit visible
-    blankMs: 280,          // gap between digits
-    preCountMs: 700,       // "get ready" before first digit
+    showMs: 900,           // each item visible
+    blankMs: 280,          // gap between items
+    preCountMs: 700,       // "get ready" before first item
     feedbackMs: 1100,
     // Adult discovery-call booking link. NOTE: the booking CTA now lives on the Outgrow
-    // Result screen (after the lead form), so this is currently unused by the widget —
-    // kept for reference / in case the in-test CTA is ever restored.
+    // Result screen (after the lead form), so this is currently unused by the widget,
+    // kept for reference in case the in-test CTA is ever restored.
     bookingUrl: "https://api.leadconnectorhq.com/widget/booking/ZFEujWUugeTS8QEdA4qB"
   };
 
   // ---- State ----------------------------------------------------------------
   var S = {
-    block: "fwd",          // "fwd" | "bwd"
+    block: "fwd",          // "fwd" | "bwd" | "img"
     len: CFG.startLen,
     trialInLen: 0,
     correctInLen: 0,
@@ -200,17 +213,22 @@
     entry: [],
     fwdSpan: 0,
     bwdSpan: 0,
-    locked: false
+    imgSpan: 0
   };
 
   var SECTIONS = ["wmq-intro","wmq-blockintro","wmq-present","wmq-recall","wmq-feedback","wmq-results"];
   function show(id){ SECTIONS.forEach(function(s){ var el=$(s); if(el) el.hidden = (s!==id); }); }
 
-  function randDigit(){ return Math.floor(Math.random()*10); }
+  function isImg(){ return S.block==="img"; }
+  function blockName(){ return S.block==="fwd" ? "Forward" : S.block==="bwd" ? "Backward" : "Pictures"; }
+  function glyph(v){ return isImg() ? ICONS[v] : String(v); }     // display token for a value
+  function maxLen(){ return S.block==="fwd" ? CFG.maxLenFwd : S.block==="bwd" ? CFG.maxLenBwd : CFG.maxLenImg; }
+
   function makeSeq(n){
+    var range = isImg() ? ICONS.length : 10;
     var a=[], prev=-1;
-    for(var i=0;i<n;i++){ var d=randDigit(); var guard=0;
-      while(d===prev && guard<5){ d=randDigit(); guard++; }   // avoid immediate repeats
+    for(var i=0;i<n;i++){ var d=Math.floor(Math.random()*range); var guard=0;
+      while(d===prev && guard<6){ d=Math.floor(Math.random()*range); guard++; }   // avoid immediate repeats
       a.push(d); prev=d;
     }
     return a;
@@ -219,18 +237,18 @@
   // ---- Presentation ---------------------------------------------------------
   function presentSequence(){
     show("wmq-present");
-    $("wmq-present-label").textContent =
-      (S.block==="fwd"?"Forward":"Backward")+" · length "+S.len;
-    var digitEl=$("wmq-digit");
-    digitEl.textContent="";
+    $("wmq-present-label").textContent = blockName()+" · length "+S.len;
+    var el=$("wmq-digit");
+    el.classList.toggle("wmq-iconmode", isImg());
+    el.textContent="";
     var i=0;
     setTimeout(function step(){
       if(i>=S.seq.length){ setTimeout(beginRecall, CFG.blankMs); return; }
-      digitEl.style.opacity="1";
-      digitEl.textContent=String(S.seq[i]);
+      el.style.opacity="1";
+      el.textContent=glyph(S.seq[i]);
       setTimeout(function(){
-        digitEl.style.opacity="0";
-        digitEl.textContent="";
+        el.style.opacity="0";
+        el.textContent="";
         i++;
         setTimeout(step, CFG.blankMs);
       }, CFG.showMs);
@@ -241,11 +259,12 @@
   function beginRecall(){
     S.entry=[];
     show("wmq-recall");
-    $("wmq-recall-label").textContent =
-      (S.block==="fwd"?"Forward":"Backward")+" · length "+S.len;
-    $("wmq-recall-instr").textContent = S.block==="fwd"
-      ? "Tap the numbers in the SAME order you saw them."
-      : "Tap the numbers in REVERSE order.";
+    $("wmq-recall-label").textContent = blockName()+" · length "+S.len;
+    $("wmq-recall-instr").textContent =
+      S.block==="bwd" ? "Tap the numbers in REVERSE order." :
+      S.block==="img" ? "Tap the pictures in the SAME order you saw them." :
+                        "Tap the numbers in the SAME order you saw them.";
+    buildPalette();
     renderEntry();
     $("wmq-submit").disabled = true;
   }
@@ -254,33 +273,42 @@
     var wrap=$("wmq-entry"); wrap.innerHTML="";
     for(var i=0;i<S.len;i++){
       var slot=document.createElement("div");
-      slot.className="wmq-slot"+(i<S.entry.length?" wmq-filled":"");
-      slot.textContent = i<S.entry.length ? String(S.entry[i]) : "";
+      var filled=i<S.entry.length;
+      slot.className="wmq-slot"+(filled?" wmq-filled":"");
+      slot.textContent = filled ? glyph(S.entry[i]) : "";
       wrap.appendChild(slot);
     }
     $("wmq-submit").disabled = (S.entry.length!==S.len);
   }
 
-  function buildKeypad(){
+  function addEntry(val){ if(S.entry.length>=S.len) return; S.entry.push(val); renderEntry(); }
+
+  function buildPalette(){
     var pad=$("wmq-keypad"); pad.innerHTML="";
-    var order=[1,2,3,4,5,6,7,8,9,0];
-    order.forEach(function(n){
-      var b=document.createElement("button");
-      b.type="button"; b.className="wmq-key"+(n===0?" wmq-key-zero":"");
-      b.textContent=String(n);
-      b.addEventListener("click",function(){
-        if(S.entry.length>=S.len) return;
-        S.entry.push(n); renderEntry();
+    if(isImg()){
+      ICONS.forEach(function(icon, idx){
+        var b=document.createElement("button");
+        b.type="button"; b.className="wmq-key wmq-key-icon";
+        b.textContent=icon;
+        b.addEventListener("click", function(){ addEntry(idx); });
+        pad.appendChild(b);
       });
-      pad.appendChild(b);
-    });
+    } else {
+      [1,2,3,4,5,6,7,8,9,0].forEach(function(n){
+        var b=document.createElement("button");
+        b.type="button"; b.className="wmq-key"+(n===0?" wmq-key-zero":"");
+        b.textContent=String(n);
+        b.addEventListener("click", function(){ addEntry(n); });
+        pad.appendChild(b);
+      });
+    }
   }
 
   // ---- Scoring flow ---------------------------------------------------------
   function submitTrial(){
     if($("wmq-submit").disabled) return;
-    var target = S.block==="fwd" ? S.seq.slice() : S.seq.slice().reverse();
-    var ok = S.entry.length===target.length && S.entry.every(function(d,i){ return d===target[i]; });
+    var target = (S.block==="bwd") ? S.seq.slice().reverse() : S.seq.slice();
+    var ok = S.entry.length===target.length && S.entry.every(function(v,i){ return v===target[i]; });
     if(ok) S.correctInLen++;
     S.trialInLen++;
     flashFeedback(ok);
@@ -294,17 +322,19 @@
     setTimeout(afterTrial, CFG.feedbackMs);
   }
 
+  function recordSpan(){
+    if(S.block==="fwd") S.fwdSpan=S.len;
+    else if(S.block==="bwd") S.bwdSpan=S.len;
+    else S.imgSpan=S.len;
+  }
+
   function afterTrial(){
-    var maxLen = S.block==="fwd" ? CFG.maxLenFwd : CFG.maxLenBwd;
     if(S.trialInLen < CFG.trialsPerLen){
-      // next trial, same length
-      S.seq=makeSeq(S.len); presentSequence(); return;
+      S.seq=makeSeq(S.len); presentSequence(); return;   // next trial, same length
     }
-    // length complete -> decide
     if(S.correctInLen >= CFG.advanceOn){
-      // passed this length
-      if(S.block==="fwd") S.fwdSpan=S.len; else S.bwdSpan=S.len;
-      if(S.len>=maxLen){ endBlock(); return; }
+      recordSpan();
+      if(S.len>=maxLen()){ endBlock(); return; }
       S.len++; S.trialInLen=0; S.correctInLen=0;
       S.seq=makeSeq(S.len); presentSequence();
     } else {
@@ -312,51 +342,59 @@
     }
   }
 
+  function startBlock(block){
+    S.block=block; S.len=CFG.startLen; S.trialInLen=0; S.correctInLen=0;
+    showBlockIntro(block);
+  }
+
   function endBlock(){
-    if(S.block==="fwd"){
-      S.block="bwd"; S.len=CFG.startLen; S.trialInLen=0; S.correctInLen=0;
-      showBlockIntro("bwd");
-    } else {
-      showResults();
-    }
+    if(S.block==="fwd") startBlock("bwd");
+    else if(S.block==="bwd") startBlock("img");
+    else showResults();
   }
 
   // ---- Block intros ---------------------------------------------------------
   function showBlockIntro(block){
     show("wmq-blockintro");
     if(block==="fwd"){
-      $("wmq-block-title").textContent="Round 1 — Forward";
+      $("wmq-block-title").textContent="Round 1: Numbers forward";
       $("wmq-block-desc").textContent="Numbers appear one at a time, then vanish. Tap them back in the SAME order.";
       $("wmq-block-demo").textContent="4  →  4";
       $("wmq-block-go").textContent="Begin Round 1";
-    } else {
-      $("wmq-block-title").textContent="Round 2 — Backward";
+    } else if(block==="bwd"){
+      $("wmq-block-title").textContent="Round 2: Numbers backward";
       $("wmq-block-desc").textContent="Same idea, but now tap the numbers back in REVERSE order. This is the harder, more revealing round.";
       $("wmq-block-demo").textContent="3 8 1  →  1 8 3";
       $("wmq-block-go").textContent="Begin Round 2";
+    } else {
+      $("wmq-block-title").textContent="Round 3: Pictures";
+      $("wmq-block-desc").textContent="Now a sequence of pictures appears one at a time. Tap them back in the SAME order. This checks your visual memory, a separate system from numbers.";
+      $("wmq-block-demo").textContent="⭐ 🔑  →  ⭐ 🔑";
+      $("wmq-block-go").textContent="Begin Round 3";
     }
   }
 
   // ---- Results --------------------------------------------------------------
   function bandFor(idx){
-    // idx = fwd + bwd combined (typical adult ~ 7 + 5 = 12)
-    if(idx>=15) return {label:"Exceptional", note:"Your working memory span is well above the typical adult range. You can hold and manipulate an unusually large amount of information at once."};
-    if(idx>=13) return {label:"Strong", note:"Above the typical adult range. You comfortably juggle multiple pieces of information in the moment."};
-    if(idx>=10) return {label:"Typical", note:"Right in the typical adult range. Most people land here — solid everyday working memory."};
-    if(idx>=8)  return {label:"Below typical", note:"A bit under the typical range today. This is common when tired, stressed, or distracted — and it's also very trainable."};
-    return {label:"Notably low today", note:"Lower than the typical range in this snapshot. A single session isn't conclusive, but if this matches your day-to-day experience, targeted strategies and coaching can make a real difference."};
+    // idx = forward + backward + picture span. Typical adult ~ 7 + 5 + 5 = 17.
+    if(idx>=22) return {label:"Exceptional", note:"Your span is well above the typical adult range across both numbers and pictures. You can hold and work with an unusually large amount of information at once."};
+    if(idx>=18) return {label:"Strong", note:"Above the typical adult range. You comfortably juggle several pieces of information in the moment, by ear and by eye."};
+    if(idx>=14) return {label:"Typical", note:"Right in the typical adult range. Most people land here, with solid everyday working memory."};
+    if(idx>=11) return {label:"Below typical", note:"A bit under the typical range today. This is common when tired, stressed, or distracted, and it is also very trainable."};
+    return {label:"Notably low today", note:"Lower than the typical range in this snapshot. A single session is not conclusive, but if this matches your day-to-day experience, targeted strategies and coaching can make a real difference."};
   }
 
   function showResults(){
     show("wmq-results");
     $("wmq-fwd-num").textContent=S.fwdSpan;
     $("wmq-bwd-num").textContent=S.bwdSpan;
-    var idx=S.fwdSpan+S.bwdSpan;
+    $("wmq-img-num").textContent=S.imgSpan;
+    var idx=S.fwdSpan+S.bwdSpan+S.imgSpan;
     $("wmq-idx-num").textContent=idx;
     var b=bandFor(idx);
     $("wmq-band").textContent=b.label;
     $("wmq-interp").textContent=b.note;
-    // Booking CTA lives on the Outgrow Result screen (after the lead form), not here —
+    // Booking CTA lives on the Outgrow Result screen (after the lead form), not here,
     // so we don't divert people past the email capture. Just prompt them to continue.
     $("wmq-cta").innerHTML='<p class="wmq-next">Add your email on the next step to get these results, plus a few practical ways to strengthen your working memory.</p>';
     emitResult(idx, b.label);
@@ -364,18 +402,16 @@
 
   // ---- Result emit (for Outgrow/GHL wiring later) ---------------------------
   function emitResult(idx, band){
-    var payload={ forwardSpan:S.fwdSpan, backwardSpan:S.bwdSpan, wmIndex:idx, band:band };
+    var payload={ forwardSpan:S.fwdSpan, backwardSpan:S.bwdSpan, pictureSpan:S.imgSpan, wmIndex:idx, band:band };
     try{ window.KAIZEN_WMQ_RESULT=payload; }catch(e){}
     try{ if(window.parent && window.parent!==window) window.parent.postMessage({type:"KAIZEN_WMQ_RESULT",payload:payload},"*"); }catch(e){}
-    // Optional: if a hidden input named wmq_result exists on the page, populate it.
     try{ var hi=document.querySelector('input[name="wmq_result"]'); if(hi) hi.value=JSON.stringify(payload); }catch(e){}
   }
 
   // ---- Wiring ---------------------------------------------------------------
   function startTest(){
-    S.block="fwd"; S.len=CFG.startLen; S.trialInLen=0; S.correctInLen=0;
-    S.fwdSpan=0; S.bwdSpan=0;
-    showBlockIntro("fwd");
+    S.fwdSpan=0; S.bwdSpan=0; S.imgSpan=0;
+    startBlock("fwd");
   }
   function beginBlockRun(){
     S.trialInLen=0; S.correctInLen=0;
@@ -383,20 +419,19 @@
   }
 
   function init(){
-    buildKeypad();
     $("wmq-start").addEventListener("click", startTest);
     $("wmq-block-go").addEventListener("click", beginBlockRun);
     $("wmq-clear").addEventListener("click", function(){ S.entry=[]; renderEntry(); });
     $("wmq-submit").addEventListener("click", submitTrial);
     $("wmq-retake").addEventListener("click", function(){ startTest(); });
-    // Physical keyboard support (desktop)
+    // Physical keyboard support (desktop) for the number rounds only.
     document.addEventListener("keydown", function(e){
       if($("wmq-recall").hidden) return;
-      if(e.key>="0"&&e.key<="9"){ if(S.entry.length<S.len){ S.entry.push(Number(e.key)); renderEntry(); } }
+      if(!isImg() && e.key>="0" && e.key<="9"){ addEntry(Number(e.key)); }
       else if(e.key==="Backspace"){ S.entry.pop(); renderEntry(); }
       else if(e.key==="Enter"){ submitTrial(); }
     });
-    show("wmq-intro"); // <- only runs if JS executes; doubles as smoke test
+    show("wmq-intro"); // only runs if JS executes; doubles as a smoke test
   }
 
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init);
